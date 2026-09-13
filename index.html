@@ -1344,10 +1344,22 @@ dialog .field input, dialog .field select { font-size: 15px; }
   }
 
   // Fetch the feed. Never waits longer than timeoutMs. Resolves {ok, data|error}.
+  // Catches the common copy-and-paste mistakes before we spend time on the network.
+  function feedUrlProblem(url) {
+    if (!url) return 'No price feed address set';
+    if (!/^https:\/\//i.test(url)) return 'The address should start with https://';
+    if (!/script\.google\.com\/macros\/s\//.test(url)) return null;
+    if (/\/dev(\?|$)/.test(url)) return 'That is the test address ending in /dev. It only works while you are signed in. Use the one ending in /exec from Deploy, New deployment.';
+    if (!/\/exec(\?|$)/.test(url)) return 'The address should end in /exec. It looks cut off, so copy the whole Web app URL again.';
+    return null;
+  }
+
   async function fetchFeed(url, key, timeoutMs) {
-    if (!url) return { ok: false, error: 'No price feed address set' };
+    const bad = feedUrlProblem(url);
+    if (bad) return { ok: false, error: bad };
+    const ms = Math.max(1000, timeoutMs || 20000);
     const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    const timer = setTimeout(() => ctrl && ctrl.abort(), Math.max(1000, timeoutMs || 4000));
+    const timer = setTimeout(() => ctrl && ctrl.abort(), ms);
     try {
       let full = url;
       if (/docs\.google\.com\/spreadsheets\/d\//.test(url)) {
@@ -1362,6 +1374,13 @@ dialog .field input, dialog .field select { font-size: 15px; }
       if (text.trim().startsWith('{')) {
         data = JSON.parse(text);
         if (!data.ok) return { ok: false, error: data.error || 'Feed refused the request' };
+      } else if (/^\s*</.test(text)) {
+        return {
+          ok: false,
+          error: /sign ?in|accounts\.google\.com|AccountChooser|ServiceLogin/i.test(text)
+            ? 'Google asked for a sign in. In the deployment, set Who has access to Anyone, then deploy a new version.'
+            : 'That address returned a web page, not prices. Check it is the Web app URL ending in /exec.'
+        };
       } else {
         data = csvToFeed(text);
       }
@@ -1369,7 +1388,10 @@ dialog .field input, dialog .field select { font-size: 15px; }
       return { ok: true, data: { source: data.sheet || 'sheet', updated: data.updated || null, fetched: new Date().toISOString(), rows: data.rows } };
     } catch (e) {
       const aborted = e && (e.name === 'AbortError');
-      return { ok: false, error: aborted ? 'Timed out after ' + Math.round((timeoutMs || 4000) / 1000) + ' s' : (e && e.message) || 'Could not reach the sheet' };
+      if (aborted) return { ok: false, error: 'Timed out after ' + Math.round(ms / 1000) + ' s. The first call of the day wakes the script up, so try once more.' };
+      const msg = (e && e.message) || '';
+      if (/failed to fetch|load failed|network/i.test(msg)) return { ok: false, error: 'Could not reach the feed. Check your signal, and that Who has access is set to Anyone.' };
+      return { ok: false, error: msg || 'Could not reach the sheet' };
     } finally { clearTimeout(timer); }
   }
 
@@ -1405,7 +1427,7 @@ dialog .field input, dialog .field select { font-size: 15px; }
     return { rows: out, sheet: 'Materials Price List' };
   }
 
-  return { SNAPSHOT, catalogue, findByText, parseCable, parseBreaker, parseConnector, pickConnector, TRADE, tradeOf, categoryOf, searchRows, CATEGORIES, normalizeRow, normalizeAll, findCable, nearbySizes, findBreakers, loadCache, saveCache, fetchFeed, parseCSV, csvToFeed, TYPE_KEYS };
+  return { SNAPSHOT, catalogue, findByText, parseCable, parseBreaker, parseConnector, pickConnector, TRADE, tradeOf, categoryOf, searchRows, CATEGORIES, normalizeRow, normalizeAll, feedUrlProblem, findCable, nearbySizes, findBreakers, loadCache, saveCache, fetchFeed, parseCSV, csvToFeed, TYPE_KEYS };
 });
 </script>
 <script>/* PRO Electrical | Feed Calculator
@@ -2433,7 +2455,7 @@ dialog .field input, dialog .field select { font-size: 15px; }
     if (!settings.feedUrl) { feedState = 'nofeed'; renderStatus(); if (manual) openSettings(); return; }
     if (!navigator.onLine) { feedState = 'error'; feedMsg = 'no signal'; renderStatus(); return; }
     feedState = 'syncing'; renderStatus();
-    P.fetchFeed(settings.feedUrl, settings.feedKey, 4000).then(function (res) {
+    P.fetchFeed(settings.feedUrl, settings.feedKey, 20000).then(function (res) {
       if (res.ok) {
         applyFeed(res.data); feedState = 'live'; feedMsg = ''; render();
         if (manual) toast('Price sheet updated');
@@ -2768,10 +2790,16 @@ dialog .field input, dialog .field select { font-size: 15px; }
     $('#settingsBtn').addEventListener('click', openSettings);
     $('#themeBtn').addEventListener('click', cycleTheme);
     $('#testFeed').addEventListener('click', function () {
-      var el = $('#feedTest');
-      el.className = 'feed-test'; el.textContent = 'Trying...';
-      P.fetchFeed($('#setFeedUrl').value.trim(), $('#setFeedKey').value.trim(), 8000).then(function (r2) {
-        if (r2.ok) { el.className = 'feed-test ok'; el.textContent = r2.data.rows.length + ' rows came back.'; }
+      var el = $('#feedTest'), btn = $('#testFeed'), t0 = Date.now(), tick;
+      btn.disabled = true;
+      el.className = 'feed-test'; el.textContent = 'Trying, this can take a few seconds the first time...';
+      tick = setInterval(function () {
+        el.textContent = 'Trying, ' + Math.round((Date.now() - t0) / 1000) + ' s so far. The first call of the day is the slow one.';
+      }, 1000);
+      P.fetchFeed($('#setFeedUrl').value.trim(), $('#setFeedKey').value.trim(), 30000).then(function (r2) {
+        clearInterval(tick); btn.disabled = false;
+        var secs = Math.round((Date.now() - t0) / 100) / 10;
+        if (r2.ok) { el.className = 'feed-test ok'; el.textContent = r2.data.rows.length + ' rows came back in ' + secs + ' s.'; }
         else { el.className = 'feed-test bad'; el.textContent = r2.error; }
       });
     });
