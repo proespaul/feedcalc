@@ -1,0 +1,2800 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Feed Calculator</title>
+<meta name="description" content="CEC feeder sizing and a priced ball park for PRO Electrical Services.">
+<meta name="theme-color" content="#1F3864">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>:root {
+  --ground: #F2F4F8;
+  --surface: #FFFFFF;
+  --surface-2: #E9EDF4;
+  --surface-3: #DDE4EF;
+  --line: #CDD5E1;
+  --line-strong: #A9B5C8;
+  --ink: #18213A;
+  --ink-2: #5B6371;
+  --ink-3: #7C8594;
+  --navy: #1F3864;
+  --navy-ink: #1F3864;
+  --blue: #2E75B6;
+  --blue-soft: #E3EEF9;
+  --ok: #1F7A4D;
+  --ok-soft: #E1F2E8;
+  --warn: #A8650D;
+  --warn-soft: #FBEEDB;
+  --bad: #C00000;
+  --bad-soft: #FBE3E3;
+  --shadow: 0 10px 30px rgba(31, 56, 100, 0.12), 0 1px 2px rgba(31, 56, 100, 0.08);
+  --radius: 10px;
+  --font-body: "IBM Plex Sans", system-ui, Roboto, "Segoe UI", Arial, sans-serif;
+  --font-display: "IBM Plex Sans Condensed", "Roboto Condensed", "Arial Narrow", var(--font-body);
+  --font-mono: "IBM Plex Mono", ui-monospace, "Roboto Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0E1420; --surface: #161E2E; --surface-2: #1F2A3D; --surface-3: #27344A;
+    --line: #2E3A50; --line-strong: #46546D; --ink: #E8EDF6; --ink-2: #A5AFC2; --ink-3: #7F8AA0;
+    --navy: #1F3864; --navy-ink: #B9CDEC; --blue: #7FB2EA; --blue-soft: #1B2F4A;
+    --ok: #4CC38A; --ok-soft: #14301F; --warn: #E5A54A; --warn-soft: #3A2A10; --bad: #F07070; --bad-soft: #3D1616;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #0E1420; --surface: #161E2E; --surface-2: #1F2A3D; --surface-3: #27344A;
+  --line: #2E3A50; --line-strong: #46546D; --ink: #E8EDF6; --ink-2: #A5AFC2; --ink-3: #7F8AA0;
+  --navy: #1F3864; --navy-ink: #B9CDEC; --blue: #7FB2EA; --blue-soft: #1B2F4A;
+  --ok: #4CC38A; --ok-soft: #14301F; --warn: #E5A54A; --warn-soft: #3A2A10; --bad: #F07070; --bad-soft: #3D1616;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  padding-block: 0 48px;
+  padding-inline: 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap { max-width: 600px; margin: 0 auto; }
+
+/* Header */
+.top {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding-block: 14px 8px;
+}
+.brand { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+.eyebrow { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: 25px; line-height: 1.02; margin: 0; color: var(--navy-ink); letter-spacing: -0.015em; text-wrap: balance; }
+.top-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+}
+.icon-btn svg { width: 20px; height: 20px; }
+.icon-btn:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* Status pill */
+.status {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface); font-size: 12.5px; color: var(--ink-2); cursor: pointer; max-width: 100%;
+  text-align: left; font-family: inherit;
+}
+.status .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ink-3); flex-shrink: 0; }
+.status[data-state="live"] .dot { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
+.status[data-state="stale"] .dot { background: var(--warn); box-shadow: 0 0 0 3px var(--warn-soft); }
+.status[data-state="nofeed"] .dot { background: var(--warn); }
+.status[data-state="syncing"] .dot { background: var(--blue); animation: pulse 1s infinite alternate; }
+.status[data-state="error"] .dot { background: var(--bad); }
+@keyframes pulse { from { opacity: 0.4; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .status .dot { animation: none !important; } }
+.status .txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status-row { display: flex; justify-content: flex-start; padding-block: 2px 14px; }
+
+/* Two runs */
+.subswitch { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-block: 16px 0; }
+.run.sub {
+  border-left: 3px solid var(--blue); padding-left: 13px; margin-left: -16px; padding-right: 3px;
+  background: linear-gradient(to right, var(--surface-2), transparent 60%);
+  border-radius: 0 8px 8px 0; margin-block: 4px 8px;
+}
+.run.sub .section:first-child { padding-top: 14px; }
+.result.is-sub { border-top-color: var(--blue); }
+.grp {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding: 9px 16px 7px; background: var(--surface-2); border-top: 1px solid var(--line);
+  font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--navy-ink);
+}
+.grp .n { font-family: var(--font-mono); font-weight: 500; font-size: 12.5px; letter-spacing: 0; text-transform: none; color: var(--ink-2); }
+.runlines .line:first-child { border-top: 0; }
+
+/* Form */
+.section { padding-block: 10px 6px; }
+.section-title { font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 8px; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.section-title .hint { font-family: var(--font-body); font-weight: 400; letter-spacing: 0; text-transform: none; font-size: 12px; color: var(--ink-3); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.grid .full { grid-column: 1 / -1; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label, .field .lbl { font-size: 12.5px; color: var(--ink-2); font-weight: 500; }
+.field input, .field select, .field textarea {
+  width: 100%; font: inherit; font-size: 16px; color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 8px; padding: 9px 11px; min-height: 42px;
+}
+.field input[type="number"] { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.field input::placeholder { color: var(--ink-3); }
+.field select { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--ink-3) 50%), linear-gradient(135deg, var(--ink-3) 50%, transparent 50%); background-position: calc(100% - 18px) 18px, calc(100% - 13px) 18px; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 30px; }
+.with-unit { position: relative; }
+.with-unit input { padding-right: 52px; }
+.with-unit .unit { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--ink-3); pointer-events: none; }
+.with-unit .unit-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); pointer-events: auto; font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); border-radius: 6px; padding: 4px 8px; cursor: pointer; }
+
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); width: 100%; }
+.seg button { flex: 1; font: inherit; font-size: 14px; border: 0; background: transparent; color: var(--ink-2); padding: 9px 6px; cursor: pointer; min-height: 42px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--navy); color: #fff; }
+
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; }
+.toggle .lbl { font-size: 14px; color: var(--ink); }
+.toggle .sub { font-size: 12px; color: var(--ink-3); display: block; }
+.switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.switch span { position: absolute; inset: 0; background: var(--line-strong); border-radius: 999px; transition: background 0.15s; cursor: pointer; }
+.switch span::after { content: ""; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.15s; }
+.switch input:checked + span { background: var(--blue); }
+.switch input:checked + span::after { transform: translateX(20px); }
+.switch input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+details.more { border-top: 1px solid var(--line); margin-top: 6px; }
+details.more summary { cursor: pointer; padding: 12px 0; font-size: 14px; color: var(--blue); font-weight: 500; list-style: none; display: flex; align-items: center; gap: 6px; }
+details.more summary::-webkit-details-marker { display: none; }
+details.more summary::before { content: "+"; font-family: var(--font-mono); width: 16px; display: inline-block; }
+details.more[open] summary::before { content: "\2212"; }
+
+/* Equipment picker */
+.hits { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; max-height: 260px; overflow-y: auto; }
+.hit {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 3px 10px; align-items: center;
+  border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 10px; text-align: left;
+  font: inherit; color: var(--ink); cursor: pointer; width: 100%;
+}
+.hit .d { grid-column: 1; grid-row: 1; font-size: 13px; line-height: 1.3; }
+.hit .m { grid-column: 1; grid-row: 2; font-size: 11.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hit .p { grid-column: 2; grid-row: 1 / span 2; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 13.5px; white-space: nowrap; }
+.hit .add { grid-column: 3; grid-row: 1 / span 2; width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--blue); font-size: 18px; line-height: 1; display: grid; place-items: center; }
+.hit.builtin { border-style: dashed; }
+.hit.builtin .m { color: var(--warn); }
+.hits .none { font-size: 13px; color: var(--ink-3); padding: 8px 2px; }
+.picked { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.pick {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 3px 8px; align-items: center;
+  border: 1px solid var(--line); border-left: 3px solid var(--blue); background: var(--surface); border-radius: 8px; padding: 8px 10px;
+}
+.pick .d { grid-column: 1; grid-row: 1; font-size: 13px; line-height: 1.3; }
+.pick .m { grid-column: 1; grid-row: 2; font-size: 11.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pick input { grid-column: 2; grid-row: 1 / span 2; width: 52px; font: inherit; font-family: var(--font-mono); font-size: 14px; text-align: center; border: 1px solid var(--line); border-radius: 6px; padding: 6px 4px; background: var(--surface); color: var(--ink); min-height: 38px; }
+.pick .p { grid-column: 3; grid-row: 1 / span 2; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 13.5px; min-width: 62px; text-align: right; white-space: nowrap; }
+.pick .x { grid-column: 4; grid-row: 1 / span 2; width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-3); font-size: 16px; line-height: 1; cursor: pointer; }
+
+/* Result card */
+.result {
+  background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); margin-block: 18px 14px; overflow: hidden;
+  border-top: 5px solid var(--navy);
+}
+.result .head { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; padding: 14px 16px 10px; align-items: end; }
+.result .kicker { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
+.result .big { font-family: var(--font-display); font-weight: 700; font-size: 44px; line-height: 1; color: var(--navy-ink); letter-spacing: -0.02em; margin-top: 2px; }
+.result .big small { font-size: 18px; font-weight: 600; color: var(--ink-2); margin-left: 6px; letter-spacing: 0; }
+.result .desc { font-size: 14px; color: var(--ink-2); margin-top: 4px; }
+.result .vd { text-align: right; }
+.result .vd .n { font-family: var(--font-mono); font-size: 26px; font-weight: 500; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.result .vd .l { font-size: 12px; color: var(--ink-2); }
+.result .vd.ok .n { color: var(--ok); }
+.result .vd.bad .n { color: var(--bad); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 12px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+.pill b { font-weight: 600; }
+.result .notes { padding: 0 16px 12px; font-size: 13px; color: var(--ink-2); display: flex; flex-direction: column; gap: 4px; }
+.result .notes div::before { content: "\2022"; margin-right: 6px; color: var(--ink-3); }
+
+.tbl-wrap { overflow-x: auto; border-top: 1px solid var(--line); }
+table.sizes { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.sizes th, table.sizes td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.sizes th { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; background: var(--surface-2); }
+table.sizes td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+table.sizes th.num { text-align: right; }
+table.sizes tr.rec td { background: var(--blue-soft); font-weight: 600; }
+table.sizes td .st { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.st.ok { background: var(--ok); } .st.bad { background: var(--bad); }
+.tbl-foot { padding: 8px 16px 12px; font-size: 12px; color: var(--ink-3); }
+
+/* Estimate */
+.estimate { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--line); margin-block: 0 16px; overflow: hidden; }
+.estimate .head { padding: 12px 16px 6px; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.estimate h2 { font-family: var(--font-display); font-size: 18px; font-weight: 700; margin: 0; color: var(--navy-ink); }
+.line { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 2px 10px; padding: 11px 16px; border-top: 1px solid var(--line); align-items: start; }
+.line .t { grid-column: 1; grid-row: 1; font-size: 14px; color: var(--ink); font-weight: 600; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.line .s { grid-column: 1; grid-row: 2; font-size: 12.5px; color: var(--ink-2); }
+.line .v { grid-column: 2; grid-row: 1 / span 2; font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; font-size: 15px; align-self: center; white-space: nowrap; }
+.line .ctl { grid-column: 1 / -1; grid-row: 3; }
+.line .v.muted { color: var(--ink-3); }
+.line select, .line input[type="number"] { font: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); padding: 6px 8px; min-height: 36px; max-width: 100%; }
+.line input[type="number"] { font-family: var(--font-mono); width: 100%; text-align: right; }
+.line .rate { width: 132px; flex-shrink: 0; }
+.line .rate input { padding-right: 46px; }
+.line .rate .unit { font-size: 12px; }
+.line .rm {
+  grid-column: 3; grid-row: 1 / span 2; width: 32px; height: 32px; flex-shrink: 0;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink-3);
+  border-radius: 8px; font-size: 17px; line-height: 1; cursor: pointer; align-self: center;
+  display: grid; place-items: center; font-family: var(--font-body);
+}
+.line .rm:active { background: var(--surface-2); }
+.line.is-off { background: var(--surface-2); }
+.line.is-off .t, .line.is-off .s { color: var(--ink-3); }
+.line.is-off .v { color: var(--ink-3); text-decoration: line-through; }
+.line.is-off .rm { color: var(--blue); border-color: var(--blue); }
+.tag.off { background: var(--surface-3); color: var(--ink-2); }
+.offcount { color: var(--warn); font-weight: 600; display: block; }
+.line .ctl { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.line .ctl select { flex: 1; min-width: 0; }
+.tag { display: inline-block; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; font-weight: 600; }
+.tag.sheet { background: var(--ok-soft); color: var(--ok); }
+.tag.est { background: var(--warn-soft); color: var(--warn); }
+.tag.manual { background: var(--surface-2); color: var(--ink-2); }
+.internal { background: var(--surface-2); border-top: 1px solid var(--line); padding: 10px 16px; }
+.internal .row { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; padding: 3px 0; }
+.internal .row .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.internal .cap { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; margin-bottom: 4px; }
+.totals { padding: 10px 16px 6px; border-top: 1px solid var(--line); }
+.totals .row { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; font-size: 14px; }
+.totals .row .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.totals .row.total { font-size: 20px; font-weight: 700; padding-top: 8px; margin-top: 4px; border-top: 2px solid var(--navy-ink); color: var(--navy-ink); }
+.totals .row.total .v { font-family: var(--font-display); font-size: 26px; }
+.actions { display: flex; gap: 8px; padding: 12px 16px 16px; flex-wrap: wrap; }
+.btn { font: inherit; font-size: 14px; font-weight: 600; border-radius: 8px; padding: 10px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink); min-height: 42px; flex: 1; }
+.btn.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+
+.msg { font-size: 13px; color: var(--ink-2); padding: 8px 16px 12px; }
+.msg.bad { color: var(--bad); }
+
+/* Method notes */
+.method { font-size: 13px; color: var(--ink-2); padding-block: 8px 24px; }
+.method summary { cursor: pointer; color: var(--blue); font-weight: 500; padding: 8px 0; }
+.method p { margin: 6px 0; }
+.method code { font-family: var(--font-mono); font-size: 12.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+
+/* Dialog */
+dialog { border: 0; border-radius: 12px; padding: 0; max-width: min(600px, calc(100vw - 32px)); width: 100%; background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+dialog::backdrop { background: rgba(10, 16, 30, 0.5); }
+dialog .dhead { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+dialog h2 { margin: 0; font-family: var(--font-display); font-size: 20px; color: var(--navy-ink); }
+dialog .dbody { padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 14px; max-height: 75vh; overflow: auto; }
+dialog .field input, dialog .field select { font-size: 15px; }
+.tiers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.tiers .field label { font-size: 11.5px; }
+.dfoot { display: flex; gap: 8px; padding: 12px 16px 16px; border-top: 1px solid var(--line); }
+.small { font-size: 12.5px; color: var(--ink-3); }
+.feed-test { font-size: 13px; color: var(--ink-2); min-height: 1.4em; }
+.feed-test.ok { color: var(--ok); } .feed-test.bad { color: var(--bad); }
+
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--ground); padding: 10px 16px; border-radius: 999px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 20; max-width: calc(100vw - 32px); text-align: center; }
+.toast.show { opacity: 1; }
+
+@media (max-width: 420px) {
+  .grid { grid-template-columns: 1fr 1fr; }
+  .result .head { grid-template-columns: 1fr; }
+  .result .vd { text-align: left; display: flex; gap: 10px; align-items: baseline; }
+  .tiers { grid-template-columns: repeat(2, 1fr); }
+  h1 { font-size: 23px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow">PRO Electrical Services</span>
+      <h1>Feed Calculator</h1>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="themeBtn" type="button" title="Light or dark" aria-label="Switch between light and dark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/></svg>
+      </button>
+      <button class="icon-btn" id="settingsBtn" type="button" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 12h3M11 12h9M4 17h8M16 17h4"/><circle cx="16" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="14" cy="17" r="2"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="status-row">
+    <button class="status" id="status" type="button" data-state="nofeed">
+      <span class="dot"></span><span class="txt">Checking the price sheet</span>
+    </button>
+  </div>
+
+  <main>
+    <div id="runMain" class="run" data-run="main"></div>
+
+    <section class="section subswitch">
+      <div class="toggle">
+        <span class="lbl">Add a subpanel feeder<span class="sub">A second run, sized on its own, priced into the same job</span></span>
+        <label class="switch"><input id="subOn" type="checkbox"><span></span></label>
+      </div>
+    </section>
+
+    <div id="runSub" class="run sub" data-run="sub" hidden></div>
+
+    <section class="section">
+      <h2 class="section-title">Job <span class="hint">travel, permit, gear</span></h2>
+      <div class="grid">
+        <div class="field">
+          <label for="rate">Labour rate</label>
+          <div class="with-unit"><input id="rate" type="number" inputmode="decimal" step="5" min="0" value="105"><span class="unit">$/hr</span></div>
+        </div>
+        <div class="field">
+          <label for="travelKm">Travel, one way</label>
+          <div class="with-unit"><input id="travelKm" type="number" step="1" min="0" value="0"><span class="unit">km</span></div>
+        </div>
+        <div class="field full">
+          <label for="permit">Permit</label>
+          <select id="permit">
+            <option value="none" selected>None</option>
+            <option value="res">Residential</option>
+            <option value="com">Commercial</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Equipment <span class="hint">from the sheet</span></h2>
+      <div class="toggle">
+        <span class="lbl">Add gear to this price<span class="sub">Search the price sheet and drop it in</span></span>
+        <label class="switch"><input id="equipOn" type="checkbox"><span></span></label>
+      </div>
+      <div id="equipPanel" hidden>
+        <div class="grid">
+          <div class="field">
+            <label for="equipCat">Kind</label>
+            <select id="equipCat"></select>
+          </div>
+          <div class="field">
+            <label for="equipQ">Search</label>
+            <input id="equipQ" type="search" inputmode="search" placeholder="100a, 3R, QO, 8x8">
+          </div>
+        </div>
+        <div class="hits" id="equipHits"></div>
+        <div class="picked" id="equipPicked"></div>
+      </div>
+    </section>
+
+    <section class="estimate" id="estimate">
+      <div class="head">
+        <h2>Ball park price</h2>
+        <span class="small"><span id="offCount" class="offcount" hidden></span><span id="priceAsOf"></span></span>
+      </div>
+      <div id="estLines"></div>
+      <div class="internal" id="internalBox">
+        <div class="cap">Internal, never shown to the customer</div>
+        <div class="row"><span>Material cost</span><span class="v" id="intCost">-</span></div>
+        <div class="row"><span id="intMarkupLbl">Markup</span><span class="v" id="intMarkup">-</span></div>
+        <div class="row"><span>Material to the customer</span><span class="v" id="intMargin">-</span></div>
+      </div>
+      <div class="totals">
+        <div class="row"><span>Materials</span><span class="v" id="totMaterial">-</span></div>
+        <div class="row"><span>Labour and travel</span><span class="v" id="totLabour">-</span></div>
+        <div class="row" id="totPermitRow" hidden><span>Permit</span><span class="v" id="totPermit">-</span></div>
+        <div class="row"><span id="gstLbl">GST 5%</span><span class="v" id="totGst">-</span></div>
+        <div class="row total"><span>Total</span><span class="v" id="totTotal">-</span></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="copyCust" type="button">Copy for customer</button>
+        <button class="btn" id="copyInt" type="button">Copy internal</button>
+      </div>
+    </section>
+
+    <details class="method">
+      <summary>How it works out the size</summary>
+      <p><b>Voltage drop.</b> Rule 8-102, page 89. Drop is figured on the connected load when you know it, otherwise on 80% of the breaker rating. The limit is 3% on a branch circuit or feeder and 5% from the service to the point of use.</p>
+      <p><b>The drop itself.</b> Table D3, page 784: <code>VD = K x f x I x L / 1000</code>, with K in ohms per circuit kilometre at 75 &deg;C, <code>f = 2</code> single phase and DC, <code>f = 1.73</code> three phase line to line, and L the one-way length in metres. Note 3 multiplies K by 0.95 at 60 &deg;C and 1.05 at 90 &deg;C.</p>
+      <p><b>Ampacity.</b> Rule 4-004, page 76: Table 2 for copper and Table 4 for aluminum, one to three conductors in a raceway or cable at 30 &deg;C. Table 5A corrects for ambient above 30 &deg;C, Table 5C for more than three current-carrying conductors. Rule 4-006, page 78, holds the size to the column your terminations are marked for: 60 &deg;C when unmarked at 100 A or less, 75 &deg;C above that.</p>
+      <p><b>Continuous load.</b> Rule 8-104: a load running three hours or more is sized at 125%, which is the same as holding it to 80% of the conductor and the device.</p>
+      <p><b>Breaker.</b> Rule 14-104, page 159: the device does not exceed the conductor ampacity, except for the Table 13 round-up to the next standard size up to 800 A. Small conductors are capped at 15 A for #14 copper, 20 A for #12 copper, 30 A for #10 copper, 15 A for #12 aluminum and 25 A for #10 aluminum.</p>
+      <p><b>Connectors.</b> On a cable run each end is picked on its own, so a feeder can leave an indoor panel on a dry connector and land in an outdoor disconnect on a weatherproof teck gland. The weatherproof pick is made on the cable diameter against the range printed on the connector itself, which is why it can tell you when a cable falls between two stocked sizes. Cable diameters are typical figures and vary by make, so check the range against the reel before you order.</p>
+      <p><b>Bonding.</b> Rule 10-616 with Table 16: the bond is sized on the breaker rating, or on the conductor ampacity where the conductors were upsized for voltage drop, and never has to be larger than the circuit conductors. A bonding means built into the cable counts (10-616 7), and so does a metal raceway that is allowed to serve as the bond (10-616 6), which is why ACWU90 and Teck show no separate bond line.</p>
+      <p><b>Two runs, one job.</b> The subpanel feeder is sized completely on its own: its own supply, length, cable, connectors and bonding. The two runs meet at the price, where the material from both is added up before the markup tier is chosen, so a job that clears a tier boundary gets the lower rate on all of it.</p>
+      <p><b>Check the tables once.</b> The ampacity tables and K values are built into the app so it works with no signal. Read them against your own book the first time you use it, and tell me if a cell disagrees.</p>
+      <p><b>Not covered here.</b> Alberta STANDATA amendments, derating for conduit fill, harmonic loading on a shared neutral, motor starting drop, and parallel runs. Those are still a look in the book.</p>
+    </details>
+  </main>
+</div>
+
+<dialog id="settingsDlg">
+  <form method="dialog">
+    <div class="dhead">
+      <h2>Settings</h2>
+      <button class="icon-btn" value="cancel" type="submit" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="dbody">
+      <div class="field">
+        <label for="setFeedUrl">Price feed address</label>
+        <input id="setFeedUrl" type="url" inputmode="url" placeholder="https://script.google.com/macros/s/.../exec">
+        <span class="small">The web app address from Code.gs. Leave it empty and the app runs on its built-in prices.</span>
+      </div>
+      <div class="field">
+        <label for="setFeedKey">Key</label>
+        <input id="setFeedKey" type="text" autocomplete="off">
+      </div>
+      <div class="field">
+        <button class="btn" id="testFeed" type="button">Test the feed now</button>
+        <span class="feed-test" id="feedTest"></span>
+      </div>
+      <div class="field">
+        <span class="lbl">Material markup by total material cost</span>
+        <div class="tiers">
+          <div class="field"><label for="t1">Under $1,000</label><input id="t1" type="number" step="1" value="43"></div>
+          <div class="field"><label for="t2">$1k to $5k</label><input id="t2" type="number" step="1" value="36"></div>
+          <div class="field"><label for="t3">$5k to $10k</label><input id="t3" type="number" step="1" value="30"></div>
+          <div class="field"><label for="t4">$10k up</label><input id="t4" type="number" step="1" value="20"></div>
+        </div>
+        <span class="small">One tier for the whole job, chosen on both runs and the gear added together.</span>
+      </div>
+      <div class="grid">
+        <div class="field"><label for="setRate">Labour rate, $/hr</label><input id="setRate" type="number" step="1" value="105"><span class="small">Also on the Job section</span></div>
+        <div class="field"><label for="setTravelHrs">Travel time in town, hrs</label><input id="setTravelHrs" type="number" step="0.25" value="0.5"></div>
+        <div class="field"><label for="setFreeKm">Free radius, km</label><input id="setFreeKm" type="number" step="1" value="50"></div>
+        <div class="field"><label for="setKmRate">Truck charge, $/km</label><input id="setKmRate" type="number" step="0.05" value="0.7"></div>
+        <div class="field"><label for="setPermitRes">Permit, residential</label><input id="setPermitRes" type="number" step="5" value="250"></div>
+        <div class="field"><label for="setPermitCom">Permit, commercial</label><input id="setPermitCom" type="number" step="5" value="300"></div>
+        <div class="field"><label for="setWaste">Cable waste, %</label><input id="setWaste" type="number" step="1" value="15"></div>
+        <div class="field"><label for="setConsPct">Consumables, % of parts</label><input id="setConsPct" type="number" step="1" value="7"></div>
+        <div class="field"><label for="setGst">GST, %</label><input id="setGst" type="number" step="0.5" value="5"></div>
+      </div>
+      <div class="toggle">
+        <span class="lbl">Round to how you buy it<span class="sub">75 m spools for #12 and smaller, 5 m for #8 and up</span></span>
+        <label class="switch"><input id="setRound" type="checkbox" checked><span></span></label>
+      </div>
+      <div class="toggle">
+        <span class="lbl">Show the internal block<span class="sub">Cost, markup and margin on screen</span></span>
+        <label class="switch"><input id="setInternal" type="checkbox" checked><span></span></label>
+      </div>
+      <span class="small" id="cacheInfo"></span>
+    </div>
+    <div class="dfoot">
+      <button class="btn primary" id="saveSettings" value="save" type="submit">Save</button>
+      <button class="btn" value="cancel" type="submit">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>/* PRO Electrical | Feed Calculator: sizing engine
+ * Canadian Electrical Code, CSA C22.1:24 (26th edition)
+ *
+ * Rules used:
+ *   8-102  Voltage drop: connected load if known, else 80% of the OCP rating; 3% branch or feeder, 5% service to load.
+ *   8-104  Continuous loads: 80% of conductor ampacity and OCP rating (devices not marked 100%).
+ *   4-004  Ampacity: Table 2 (Cu) and Table 4 (Al), 1 to 3 conductors in raceway or cable, 30 C ambient.
+ *          Table 5A ambient correction, Table 5C for more than 3 current-carrying conductors (also cables in contact > 600 mm).
+ *   4-006  Termination temperature: size from the column matching the equipment marking (60 C if unmarked and <= 100 A, 75 C if > 100 A).
+ *   14-104 OCP not above conductor ampacity except Table 13 round-up (to 800 A); caps 14 Cu 15 A, 12 Cu 20 A, 10 Cu 30 A, 12 Al 15 A, 10 Al 25 A.
+ *   Table D3 (Appendix D) K method: VD = K x f x I x L / 1000; K in ohms per circuit km at 75 C; f = 2 single phase, 1.73 three phase line to line.
+ *
+ * Nothing here is a substitute for the Code book. Values below are transcribed from the standard tables; the app cites the rule and page so the book can be checked.
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.VDEngine = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  // Conductor sizes in ascending order of ampacity.
+  const SIZES = ['14', '12', '10', '8', '6', '4', '3', '2', '1', '1/0', '2/0', '3/0', '4/0',
+    '250', '300', '350', '400', '500', '600', '700', '750', '800', '900', '1000'];
+
+  // Table 2: copper, not more than 3 conductors in raceway or cable, ambient 30 C. Columns 60 / 75 / 90 C.
+  const TABLE2 = {
+    '14': [15, 20, 25], '12': [20, 25, 30], '10': [30, 35, 40], '8': [40, 50, 55],
+    '6': [55, 65, 75], '4': [70, 85, 95], '3': [85, 100, 110], '2': [95, 115, 130],
+    '1': [110, 130, 145], '1/0': [125, 150, 170], '2/0': [145, 175, 195], '3/0': [165, 200, 225],
+    '4/0': [195, 230, 260], '250': [215, 255, 290], '300': [240, 285, 320], '350': [260, 310, 350],
+    '400': [280, 335, 380], '500': [320, 380, 430], '600': [350, 420, 475], '700': [385, 460, 520],
+    '750': [400, 475, 535], '800': [410, 490, 555], '900': [435, 520, 585], '1000': [455, 545, 615]
+  };
+  // Table 4: aluminum, same conditions.
+  const TABLE4 = {
+    '12': [15, 20, 25], '10': [25, 30, 35], '8': [35, 40, 45], '6': [40, 50, 55],
+    '4': [55, 65, 75], '3': [65, 75, 85], '2': [75, 90, 100], '1': [85, 100, 115],
+    '1/0': [100, 120, 135], '2/0': [115, 135, 150], '3/0': [130, 155, 175], '4/0': [150, 180, 205],
+    '250': [170, 205, 230], '300': [195, 230, 260], '350': [210, 250, 280], '400': [225, 270, 305],
+    '500': [260, 310, 350], '600': [285, 340, 385], '700': [315, 375, 425], '750': [320, 385, 435],
+    '800': [330, 395, 445], '900': [355, 425, 480], '1000': [375, 445, 500]
+  };
+
+  // Conductor resistance, ohms per km at 75 C (Table D3 100% pf basis: 14 to 8 AWG are the D3 values; larger sizes are the standard DC
+  // resistance figures used by the D3 method). Reactance, ohms per km, 60 Hz: cable or non-metallic raceway, and steel raceway.
+  const R_CU = { '14': 10.2, '12': 6.38, '10': 4.03, '8': 2.54, '6': 1.61, '4': 1.01, '3': 0.804, '2': 0.636, '1': 0.505,
+    '1/0': 0.400, '2/0': 0.317, '3/0': 0.251, '4/0': 0.199, '250': 0.169, '300': 0.141, '350': 0.120, '400': 0.105,
+    '500': 0.0846, '600': 0.0702, '700': 0.0604, '750': 0.0561, '800': 0.0528, '900': 0.0469, '1000': 0.0423 };
+  const R_AL = { '12': 10.5, '10': 6.58, '8': 4.13, '6': 2.65, '4': 1.67, '3': 1.32, '2': 1.05, '1': 0.830,
+    '1/0': 0.659, '2/0': 0.522, '3/0': 0.413, '4/0': 0.328, '250': 0.278, '300': 0.232, '350': 0.198, '400': 0.174,
+    '500': 0.139, '600': 0.116, '700': 0.0994, '750': 0.0925, '800': 0.0869, '900': 0.0771, '1000': 0.0696 };
+  const X_PVC = { '14': 0.190, '12': 0.177, '10': 0.164, '8': 0.171, '6': 0.167, '4': 0.157, '3': 0.154, '2': 0.148, '1': 0.151,
+    '1/0': 0.144, '2/0': 0.141, '3/0': 0.138, '4/0': 0.135, '250': 0.135, '300': 0.135, '350': 0.131, '400': 0.131,
+    '500': 0.128, '600': 0.128, '700': 0.125, '750': 0.125, '800': 0.125, '900': 0.121, '1000': 0.121 };
+  const X_STEEL = { '14': 0.240, '12': 0.223, '10': 0.207, '8': 0.213, '6': 0.210, '4': 0.197, '3': 0.194, '2': 0.187, '1': 0.187,
+    '1/0': 0.180, '2/0': 0.177, '3/0': 0.171, '4/0': 0.167, '250': 0.171, '300': 0.167, '350': 0.164, '400': 0.161,
+    '500': 0.157, '600': 0.157, '700': 0.157, '750': 0.157, '800': 0.154, '900': 0.154, '1000': 0.151 };
+
+  // Table 13 standard ratings of overcurrent devices (round-up permitted to 800 A per 14-104 1) a)).
+  const STD_OCP = [15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 110, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 600, 700, 800];
+  // 14-104 2) caps on small conductors.
+  const OCP_CAP = { Cu: { '14': 15, '12': 20, '10': 30 }, Al: { '12': 15, '10': 25 } };
+
+  // Cable / wiring methods. insul = conductor temperature rating. react = reactance set.
+  // bond: how the bonding means is provided. 'integral' = in the assembly (Rule 10-616 7), 'raceway' = the metal
+  // raceway may serve (10-616 6), 'separate' = a bonding conductor has to be pulled (Table 16, 10-616 3).
+  const METHODS = {
+    ACWU90: { label: 'ACWU90 armoured, wet or buried', insul: 90, react: 'pvc', bond: 'integral', minSize: '8', maxSize: '1000', family: 'cable' },
+    NMD90: { label: 'NMD90 (Loomex), dry interior', insul: 90, react: 'pvc', bond: 'integral', minSize: '14', maxSize: '4/0', family: 'cable' },
+    NMWU: { label: 'NMWU, direct burial', insul: 60, react: 'pvc', bond: 'integral', minSize: '14', maxSize: '4/0', family: 'cable' },
+    TECK90: { label: 'Teck90 armoured', insul: 90, react: 'pvc', bond: 'integral', minSize: '14', maxSize: '1000', family: 'cable' },
+    AC90: { label: 'AC90 (BX) armoured, dry', insul: 90, react: 'pvc', bond: 'integral', minSize: '14', maxSize: '1', family: 'cable' },
+    RW90_STEEL: { label: 'RW90 / T90 in EMT or steel conduit', insul: 90, react: 'steel', bond: 'raceway', minSize: '14', maxSize: '1000', family: 'wire' },
+    RW90_PVC: { label: 'RW90 / T90 in PVC or aluminum conduit', insul: 90, react: 'pvc', bond: 'separate', minSize: '14', maxSize: '1000', family: 'wire' },
+    RWU90: { label: 'RWU90 direct burial or duct', insul: 90, react: 'pvc', bond: 'separate', minSize: '14', maxSize: '1000', family: 'wire' },
+    TWU: { label: 'TWU underground', insul: 60, react: 'pvc', bond: 'separate', minSize: '14', maxSize: '1000', family: 'wire' },
+    USEB90: { label: 'USEB90 service entrance', insul: 90, react: 'pvc', bond: 'integral', minSize: '6', maxSize: '1000', family: 'cable' }
+  };
+
+  // Supply systems. f = Table D3 voltage drop factor. cond = current-carrying conductors in a plain circuit of this type.
+  const SYSTEMS = {
+    '240-1-3w': { label: '120/240 V, 1-phase, 3-wire', V: 240, f: 2, phase: 1, cond: 2, cable: 3, neutral: 'balanced' },
+    '120-1': { label: '120 V, 1-phase, 2-wire', V: 120, f: 2, phase: 1, cond: 2, cable: 2, neutral: 'counted' },
+    '240-1-2w': { label: '240 V, 1-phase, 2-wire, no neutral', V: 240, f: 2, phase: 1, cond: 2, cable: 2, neutral: 'none' },
+    '208-1': { label: '208 V, 1-phase off a 3-phase panel', V: 208, f: 2, phase: 1, cond: 2, cable: 2, neutral: 'none' },
+    '277-1': { label: '277 V, line to neutral', V: 277, f: 2, phase: 1, cond: 2, cable: 2, neutral: 'counted' },
+    '347-1': { label: '347 V, line to neutral', V: 347, f: 2, phase: 1, cond: 2, cable: 2, neutral: 'counted' },
+    '208-3': { label: '208Y/120 V, 3-phase, 4-wire', V: 208, f: 1.73, phase: 3, cond: 3, cable: 4, neutral: 'balanced' },
+    '240-3': { label: '240 V, 3-phase, 3-wire', V: 240, f: 1.73, phase: 3, cond: 3, cable: 3, neutral: 'none' },
+    '480-3': { label: '480 V, 3-phase, 3-wire', V: 480, f: 1.73, phase: 3, cond: 3, cable: 3, neutral: 'none' },
+    '600-3': { label: '600 V, 3-phase, 3-wire', V: 600, f: 1.73, phase: 3, cond: 3, cable: 3, neutral: 'none' },
+    '347/600-3': { label: '347/600 V, 3-phase, 4-wire', V: 600, f: 1.73, phase: 3, cond: 3, cable: 4, neutral: 'balanced' },
+    'dc-12': { label: '12 V DC', V: 12, f: 2, phase: 0, cond: 2, cable: 2, neutral: 'none' },
+    'dc-24': { label: '24 V DC', V: 24, f: 2, phase: 0, cond: 2, cable: 2, neutral: 'none' },
+    'dc-48': { label: '48 V DC', V: 48, f: 2, phase: 0, cond: 2, cable: 2, neutral: 'none' }
+  };
+
+  // Table 16: minimum size of bonding conductor, entered on the rating of the overcurrent device
+  // (Rule 10-616 1) and 3) a)), or on the ampacity of the ungrounded conductors where they were
+  // upsized for voltage drop (10-616 3) b)).
+  const TABLE16 = [
+    { amps: 15, Cu: '14', Al: '12' }, { amps: 20, Cu: '12', Al: '10' }, { amps: 30, Cu: '10', Al: '8' },
+    { amps: 40, Cu: '10', Al: '8' }, { amps: 60, Cu: '10', Al: '8' }, { amps: 100, Cu: '8', Al: '6' },
+    { amps: 125, Cu: '6', Al: '4' }, { amps: 165, Cu: '6', Al: '4' }, { amps: 200, Cu: '6', Al: '4' },
+    { amps: 250, Cu: '4', Al: '2' }, { amps: 300, Cu: '4', Al: '2' }, { amps: 400, Cu: '3', Al: '1' },
+    { amps: 500, Cu: '2', Al: '1/0' }, { amps: 600, Cu: '1', Al: '2/0' }, { amps: 800, Cu: '1/0', Al: '3/0' },
+    { amps: 1000, Cu: '2/0', Al: '4/0' }, { amps: 1200, Cu: '3/0', Al: '250' }
+  ];
+
+  /**
+   * Minimum bonding conductor, Rule 10-616 with Table 16.
+   * @param bondMaterial 'Cu' or 'Al' (the bond's own material)
+   * @param amps         the overcurrent device rating, or the conductor ampacity when upsized for drop
+   * @param circuitSize  the circuit conductor size: 10-616 5) says the bond is never larger than it
+   */
+  function bondSize(bondMaterial, amps, circuitSize) {
+    var m = bondMaterial === 'Al' ? 'Al' : 'Cu';
+    var row = null;
+    for (var i = 0; i < TABLE16.length; i++) { if (TABLE16[i].amps >= amps - 1e-9) { row = TABLE16[i]; break; } }
+    if (!row) row = TABLE16[TABLE16.length - 1];
+    var size = row[m];
+    if (circuitSize && sizeIndex(size) > sizeIndex(circuitSize)) size = circuitSize; // 10-616 5)
+    return { size: size, label: sizeLabel(size), enteredAt: row.amps };
+  }
+
+  /**
+   * Current-carrying conductors for Table 5C, from the supply. Rule 4-004 3) and 4):
+   * a neutral carrying only unbalanced current is not counted; a common conductor carrying
+   * current comparable to the phases is.
+   */
+  function conductorCount(systemKey, neutralCounts) {
+    var sys = SYSTEMS[systemKey] || SYSTEMS['240-1-3w'];
+    var n = sys.cond;
+    if (neutralCounts && sys.neutral === 'balanced') n += 1;
+    return n;
+  }
+
+  // Approximate finished cable diameter, mm, for a 3-conductor cable (plus bond). Manufacturer data varies by
+  // make, so this is a starting point: the app matches it against the OD range printed on the connector itself.
+  const OD3 = {
+    ACWU90: { '8': 19.0, '6': 21.5, '4': 24.5, '3': 26.0, '2': 28.0, '1': 31.0, '1/0': 33.5, '2/0': 36.0,
+      '3/0': 39.0, '4/0': 42.0, '250': 46.0, '300': 49.0, '350': 51.5, '400': 54.0, '500': 58.0 },
+    TECK90: { '14': 15.0, '12': 16.2, '10': 17.6, '8': 21.5, '6': 24.5, '4': 28.5, '3': 30.5, '2': 32.5,
+      '1': 36.5, '1/0': 39.0, '2/0': 42.0, '3/0': 45.0, '4/0': 49.0, '250': 53.0, '300': 56.0, '350': 59.0,
+      '400': 62.0, '500': 67.0 },
+    NMD90: { '14': 11.0, '12': 12.0, '10': 14.0, '8': 17.5, '6': 20.0, '4': 23.5, '2': 27.0 },
+    AC90: { '14': 11.5, '12': 12.5, '10': 14.0, '8': 17.5, '6': 20.0, '4': 23.0, '2': 26.5 }
+  };
+  OD3.NMWU = OD3.NMD90;
+  OD3.USEB90 = OD3.ACWU90;
+
+  // Outside diameter in inches for the cable actually being run. n conductors are laid up in a circle whose
+  // diameter is k(n) times one conductor: k(2) 2.00, k(3) 2.155, k(4) 2.414. Armour and jacket are added back.
+  function cableOD(method, size, cond) {
+    var t = OD3[method];
+    if (!t || t[size] == null) return null;
+    var base = t[size];
+    var n = cond || 3;
+    if (n !== 3) {
+      var jacket = 6.0; // armour plus jacket, both sides
+      var core = Math.max(1, base - jacket);
+      var k = { 1: 1.0, 2: 2.0, 3: 2.155, 4: 2.414, 5: 2.70 }[n] || 2.155;
+      base = core * (k / 2.155) + jacket;
+    }
+    return Math.round(base / 25.4 * 1000) / 1000;
+  }
+
+  // Trade size from the cable diameter, taken from the ranges the stocked teck glands cover.
+  function tradeForOD(od) {
+    if (od == null) return null;
+    if (od <= 0.885) return '1/2';
+    if (od <= 1.205) return '3/4';
+    if (od <= 1.375) return '1';
+    if (od <= 1.625) return '1-1/4';
+    if (od <= 2.0) return '1-1/2';
+    return '2';
+  }
+
+  // Trade size for a dry-location cable connector, which is picked by the cable rather than by diameter.
+  function dryTrade(size, cond) {
+    var i = sizeIndex(size), n = cond || 2;
+    var trade;
+    if (i <= sizeIndex('10')) trade = '1/2';
+    else if (i <= sizeIndex('8')) trade = '3/4';
+    else if (i <= sizeIndex('6')) trade = n >= 3 ? '1' : '3/4';
+    else if (i <= sizeIndex('4')) trade = '1';
+    else if (i <= sizeIndex('2')) trade = '1-1/4';
+    else if (i <= sizeIndex('1/0')) trade = '1-1/2';
+    else trade = '2';
+    return trade;
+  }
+
+  function sizeIndex(s) { return SIZES.indexOf(String(s)); }
+  function sizeLabel(s) { return /^\d{3,4}$/.test(s) ? s + ' kcmil' : '#' + s + ' AWG'; }
+  function sizeCompare(a, b) { return sizeIndex(a) - sizeIndex(b); }
+
+  // Table 5A ambient correction. Factor = sqrt((Tc - Ta) / (Tc - 30)); never above 1.00 in this app (cold ambient gives no credit).
+  function ambientFactor(ambientC, columnC) {
+    const ta = Number(ambientC);
+    if (!isFinite(ta) || ta <= 30) return 1;
+    if (ta >= columnC) return 0;
+    return Math.sqrt((columnC - ta) / (columnC - 30));
+  }
+  // Table 5C: more than 3 current-carrying conductors in a raceway or cable, or cables in contact for more than 600 mm.
+  function bundleFactor(n) {
+    const c = Math.max(1, Math.round(Number(n) || 1));
+    if (c <= 3) return 1.0;
+    if (c <= 6) return 0.80;
+    if (c <= 24) return 0.70;
+    if (c <= 42) return 0.60;
+    return 0.50;
+  }
+
+  function tableAmpacity(material, size, columnC) {
+    const t = material === 'Al' ? TABLE4 : TABLE2;
+    const row = t[size];
+    if (!row) return null;
+    const col = columnC <= 60 ? 0 : (columnC <= 75 ? 1 : 2);
+    return row[col];
+  }
+
+  // Largest overcurrent device permitted to protect a conductor of this corrected ampacity (Table 13 round-up, 14-104 2) caps).
+  function maxOCP(material, size, ampacity) {
+    let m;
+    if (ampacity <= 800) {
+      m = STD_OCP.find(r => r >= ampacity) || 800;
+    } else {
+      m = Math.floor(ampacity);
+    }
+    const cap = (OCP_CAP[material] || {})[size];
+    if (cap && m > cap) m = cap;
+    return m;
+  }
+  function nextStandardOCP(amps) {
+    return STD_OCP.find(r => r >= amps - 1e-9) || null;
+  }
+
+  // K in ohms per circuit km. pf = 1 gives the Table D3 100% pf column (resistance at 75 C). opMult is D3 note 3: 0.95 at 60 C, 1.05 at 90 C.
+  function kFactor(material, size, react, pf, opMult) {
+    const R = (material === 'Al' ? R_AL : R_CU)[size];
+    if (R == null) return null;
+    const X = (react === 'steel' ? X_STEEL : X_PVC)[size];
+    const p = Math.min(1, Math.max(0.5, Number(pf) || 1));
+    const sin = Math.sqrt(1 - p * p);
+    return R * (opMult || 1) * p + X * sin;
+  }
+
+  /**
+   * Main sizing routine.
+   * @param {object} q
+   *   system: key of SYSTEMS; voltage: override V (number, optional)
+   *   loadMode: 'load' | 'breaker'; amps: number (load amps, or breaker rating in breaker mode)
+   *   continuous: boolean (load mode only)
+   *   material: 'Cu' | 'Al'; method: key of METHODS
+   *   termTemp: 60 | 75 | 90; ambient: C; conductors: current-carrying count
+   *   lengthM: one-way run in metres; vdLimit: percent; pf: 0.5..1; opTemp: 60|75|90
+   */
+  function size(q) {
+    const sys = SYSTEMS[q.system] || SYSTEMS['240-1-2w'];
+    const V = Number(q.voltage) > 0 ? Number(q.voltage) : sys.V;
+    const method = METHODS[q.method] || METHODS.NMD90;
+    const material = q.material === 'Al' ? 'Al' : 'Cu';
+    const termTemp = [60, 75, 90].includes(Number(q.termTemp)) ? Number(q.termTemp) : 75;
+    const column = Math.min(method.insul, termTemp);
+    const L = Math.max(0, Number(q.lengthM) || 0);
+    const vdLimit = Number(q.vdLimit) > 0 ? Number(q.vdLimit) : 3;
+    const pf = q.pf ? Number(q.pf) : 1;
+    const opMult = q.opTemp === 60 || q.opTemp === '60' ? 0.95 : (q.opTemp === 90 || q.opTemp === '90' ? 1.05 : 1);
+    const amps = Math.max(0, Number(q.amps) || 0);
+    const loadMode = q.loadMode === 'breaker' ? 'breaker' : 'load';
+    const continuous = loadMode === 'load' ? q.continuous !== false : false;
+    const nCond = Math.max(1, Number(q.conductors) || sys.cond);
+
+    // Rule 8-102 1): connected load if known, otherwise 80% of the overcurrent device rating.
+    const iVD = loadMode === 'load' ? amps : 0.8 * amps;
+    // Rule 8-104: continuous load may not exceed 80% of the conductor ampacity and device rating.
+    const iAmpReq = loadMode === 'load' ? (continuous ? amps / 0.8 : amps) : amps;
+    const fAmb = ambientFactor(q.ambient, column);
+    const fBun = bundleFactor(nCond);
+
+    const rows = [];
+    for (const s of SIZES) {
+      const base = tableAmpacity(material, s, column);
+      if (base == null) continue;
+      const corrected = base * fAmb * fBun;
+      const ocpMax = maxOCP(material, s, corrected);
+      const K = kFactor(material, s, method.react, pf, opMult);
+      const vd = K * sys.f * iVD * L / 1000;
+      const vdPct = V > 0 ? vd / V * 100 : 0;
+      let ampOK;
+      let breaker = null;
+      if (loadMode === 'breaker') {
+        // The conductor must be one the chosen breaker is allowed to protect.
+        ampOK = ocpMax >= amps && corrected > 0;
+        breaker = amps;
+      } else {
+        ampOK = corrected >= iAmpReq - 1e-9;
+        const need = nextStandardOCP(iAmpReq);
+        breaker = need && need <= ocpMax ? need : (ampOK ? ocpMax : null);
+      }
+      const vdOK = vdPct <= vdLimit + 1e-9;
+      const maxLen = (K > 0 && iVD > 0) ? (vdLimit / 100 * V) * 1000 / (K * sys.f * iVD) : Infinity;
+      rows.push({ size: s, label: sizeLabel(s), base, corrected: round(corrected, 1), ocpMax, K: round(K, 3), vd: round(vd, 2), vdPct: round(vdPct, 2),
+        ampOK, vdOK, ok: ampOK && vdOK, breaker, maxLen: isFinite(maxLen) ? round(maxLen, 1) : null,
+        inRange: sizeIndex(s) >= sizeIndex(method.minSize) && sizeIndex(s) <= sizeIndex(method.maxSize) });
+    }
+    const minByAmp = rows.find(r => r.ampOK) || null;
+    const minByVD = rows.find(r => r.vdOK) || null;
+    const rec = rows.find(r => r.ok) || null;
+    const governed = rec ? (minByAmp && rec.size === minByAmp.size ? (minByVD && minByVD.size === rec.size ? 'both' : 'ampacity') : 'voltage drop') : null;
+
+    const notes = [];
+    if (loadMode === 'breaker') notes.push('Load unknown: voltage drop based on 80% of the ' + amps + ' A device (Rule 8-102 1)).');
+    else if (continuous) notes.push('Continuous load: conductor and breaker sized at 125% (Rule 8-104).');
+    if (fAmb < 1) notes.push('Ambient ' + q.ambient + ' C: Table 5A factor ' + fAmb.toFixed(2) + ' on the ' + column + ' C column.');
+    if (fBun < 1) notes.push(nCond + ' current-carrying conductors: Table 5C factor ' + fBun.toFixed(2) + '.');
+    if (termTemp < method.insul) notes.push(method.insul + ' C cable sized from the ' + termTemp + ' C column for the terminations (Rule 4-006).');
+    if (rec && !rec.inRange) notes.push('Larger than usually stocked in ' + method.label + '. Consider another cable type or a parallel run.');
+    if (rec && minByVD && sizeCompare(minByVD.size, minByAmp ? minByAmp.size : minByVD.size) > 0) notes.push('Upsized for voltage drop, so the bond comes off Table 16 at the conductor ampacity, not the breaker (Rule 10-616 3) b)).');
+    if (pf < 1) notes.push('Power factor ' + pf + ': K = R x pf + X x sin(phi). Table D3 pf columns run slightly higher for small sizes.');
+
+    return {
+      system: sys, V, f: sys.f, method, material, column, termTemp, insul: method.insul,
+      loadMode, amps, continuous, iVD: round(iVD, 2), iAmpReq: round(iAmpReq, 2), fAmb: round(fAmb, 3), fBun, nCond,
+      lengthM: L, vdLimit, pf, opMult, rows, minByAmp, minByVD, recommended: rec, governed, notes,
+      cableConductors: sys.cable
+    };
+  }
+
+  function round(x, d) { const m = Math.pow(10, d); return Math.round((x + 1e-9) * m) / m; }
+
+  // Purchase length rounding (PRO takeoff rules): 15% waste; #14 and #12 to 75 m spools; #10 to 5 m under 50 m else 75 m spool; #8 and larger to 5 m.
+  function purchaseLength(runM, size, wastePct, roundToPurchase) {
+    const w = (Number(wastePct) >= 0 ? Number(wastePct) : 15) / 100;
+    const raw = runM * (1 + w);
+    if (!roundToPurchase) return { raw: round(raw, 1), buy: Math.ceil(raw), rule: 'rounded up to the metre' };
+    const idx = sizeIndex(size);
+    if (idx <= sizeIndex('12')) return { raw: round(raw, 1), buy: Math.ceil(raw / 75) * 75, rule: '75 m spool' };
+    if (size === '10') {
+      if (raw < 50) return { raw: round(raw, 1), buy: Math.ceil(raw / 5) * 5, rule: 'nearest 5 m' };
+      return { raw: round(raw, 1), buy: Math.ceil(raw / 75) * 75, rule: '75 m spool' };
+    }
+    return { raw: round(raw, 1), buy: Math.ceil(raw / 5) * 5, rule: 'nearest 5 m' };
+  }
+
+  // Tiered material markup on the whole material cost. tiers: [{upTo: 1000, pct: 43}, ..., {upTo: null, pct: 20}]
+  function markupFor(cost, tiers) {
+    for (const t of tiers) {
+      if (t.upTo == null || cost < t.upTo) return Number(t.pct) || 0;
+    }
+    return 0;
+  }
+
+  function ampsFromWatts(watts, V, phase, pf) {
+    const p = Number(pf) > 0 ? Number(pf) : 1;
+    if (!(V > 0)) return 0;
+    return phase === 3 ? watts / (1.732 * V * p) : watts / (V * p);
+  }
+
+  return { SIZES, TABLE2, TABLE4, TABLE16, OD3, cableOD, dryTrade, tradeForOD, bondSize, conductorCount, R_CU, R_AL, X_PVC, X_STEEL, STD_OCP, OCP_CAP, METHODS, SYSTEMS,
+    size, sizeLabel, sizeIndex, sizeCompare, ambientFactor, bundleFactor, tableAmpacity, maxOCP, nextStandardOCP, kFactor,
+    purchaseLength, markupFor, ampsFromWatts, round };
+});
+</script>
+<script>/* PRO Electrical | price sheet feed, cache and description parser */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.VDPrices = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  // Built-in snapshot of the Materials Price List (wire and breaker rows) as read on 2026-09-11.
+  // Used only until the app has synced with the sheet once; after that the cached copy from the sheet wins.
+  const SNAPSHOT = {
+    source: 'built-in snapshot',
+    updated: '2026-09-11',
+    fetched: null,
+    rows: [
+      ['WIRE-015', '2C-12 7-strand CU TECK wire black, cut lengths (per m)', 'm', 6.79, 'Bartle & Gibson', '2026-03-12'],
+      ['WIRE-016', '2C-12 solid copper NMD90 wire yellow (per metre)', 'm', 2.20, 'Bartle & Gibson', '2026-01-07'],
+      ['WIRE-017', '2C-12 solid CU NMD90 wire yellow, cut lengths (per m)', 'm', 2.17, 'Bartle & Gibson', '2026-06-02'],
+      ['WIRE-025', '4C-3/0 (shorts) 18-strand copper teck wire black (per metre)', 'm', 136.08, 'Bartle & Gibson', '2026-03-13'],
+      ['WIRE-027', '#6 7-strand CU 600V RW90 wire, green (per m, cut)', 'm', 4.02, 'Bartle & Gibson', '2026-03-12'],
+      ['WIRE-028', '#6 CU RW90 600V 90-deg XLPE cable, black (per m)', 'm', 4.19, 'EECOL', ''],
+      ['WIRE-029', '#6 CU RW90 600V 90-deg XLPE cable, red (per m)', 'm', 4.19, 'EECOL', ''],
+      ['WIRE-033', 'AC90 armoured cable 14/2 copper', 'm', 3.36, 'EECOL', ''],
+      ['WIRE-034', 'AC90 wire 2C-14 solid CU (per metre)', 'm', 2.62, 'Bartle & Gibson', '2026-04-01'],
+      ['WIRE-035', 'ACWU90 3-conductor #1 aluminum cable (per m)', 'm', 16.95, 'EECOL', ''],
+      ['WIRE-036', 'ACWU90 3-conductor #2/0 aluminum cable (per m)', 'm', 21.65, 'EECOL', ''],
+      ['WIRE-037', 'ACWU90 3-conductor #4 aluminum cable', 'm', 11.04, 'EECOL', ''],
+      ['WIRE-038', 'ACWU90 3-conductor #6 aluminum cable', 'm', 9.12, 'EECOL', ''],
+      ['WIRE-039', 'ACWU90 3C-2/0 aluminum wire, black (shorts, per m)', 'm', 17.93, 'Bartle & Gibson', '2026-05-07'],
+      ['WIRE-040', 'ACWU90 cable, 3-conductor #1/0 aluminum (per m)', 'm', 18.04, 'EECOL', ''],
+      ['WIRE-051', 'NMD90 10/2 solid copper wire, orange (shorts, per m)', 'm', 4.71, 'Bartle & Gibson', '2026-08-21'],
+      ['WIRE-052', 'NMD90 14/2 Copper 75m PVC Jacket Cable 300V 90 Degrees', 'm', 1.92, 'EECOL', ''],
+      ['WIRE-053', 'NMD90 14/3 solid copper wire, white (shorts, per m)', 'm', 2.37, 'Bartle & Gibson', '2026-01-19'],
+      ['WIRE-055', 'NMD90 wire 14/2 solid Cu, white (short length, per m)', 'm', 1.73, 'Bartle & Gibson', '2026-06-02'],
+      ['WIRE-080', 'NMD90 12/2 Copper 75m PVC Jacket Cable 300V 90 Degrees', 'm', 2.65, 'EECOL', ''],
+      ['BRK-003', '1P 120V 20A circuit breaker', 'ea', 11.82, 'EECOL', ''],
+      ['BRK-004', 'ABB THQL 1-pole 120V 20A GFCI self-test breaker', 'ea', 125.54, 'Bartle & Gibson', '2026-04-22'],
+      ['BRK-005', 'ABB THQL 2-pole 120/240V 20A GFCI self-test breaker', 'ea', 219.65, 'Bartle & Gibson', '2026-04-22'],
+      ['BRK-006', 'ABB THQL1115 breaker, 1-pole 15A 120/240V 10kAIC', 'ea', 9.79, 'Bartle & Gibson', '2025-11-25'],
+      ['BRK-007', 'ABB THQL1120 breaker, 1-pole 20A 120/240V 10kAIC', 'ea', 9.79, 'Bartle & Gibson', '2025-11-25'],
+      ['BRK-008', 'ABB THQL2120 breaker, 2-pole 20A 120/240V 10kAIC', 'ea', 23.84, 'Bartle & Gibson', '2026-08-12'],
+      ['BRK-011', 'Cutler Hammer BAB1015 1-pole 15A bolt-in breaker', 'ea', 27.05, 'Bartle & Gibson', '2026-01-05'],
+      ['BRK-012', 'Cutler Hammer BAB1020 1-pole 20A bolt-in breaker', 'ea', 27.05, 'Bartle & Gibson', '2026-01-05'],
+      ['BRK-015', 'Push-in 15A 1-pole breaker', 'ea', 12.09, 'Bartle & Gibson', '2026-03-12'],
+      ['BRK-016', 'Square D 2-pole 60A circuit breaker', 'ea', 80.74, 'Home Hardware', ''],
+      ['BRK-018', 'ABB/GE THQL 2-pole 15A breaker 120/240V 10kAIC', 'ea', 22.39, 'Bartle & Gibson', '2025-12-03'],
+      ['WIRE-001', '1 in 90-degree cable connector', 'ea', 11.14, 'EECOL', ''],
+      ['WIRE-002', '1" cable connector (25/box)', 'ea', 3.29, 'EECOL', ''],
+      ['WIRE-004', '1" Teck connector, 1.187-1.375"', 'ea', 63.77, 'EECOL', ''],
+      ['WIRE-005', '1-1/2" cable connector (10/box)', 'ea', 9.87, 'EECOL', ''],
+      ['WIRE-006', '1-1/4" 2-screw cable connector', 'ea', 30.36, 'EECOL', ''],
+      ['WIRE-007', '1-1/4" Teck connector 1.350-1.625', 'ea', 101.78, 'EECOL', ''],
+      ['WIRE-008', '1/2" 90-deg cable connector', 'ea', 2.80, 'EECOL', ''],
+      ['WIRE-009', '1/2" cable connector (50/box)', 'ea', 1.50, 'EECOL', ''],
+      ['WIRE-012', '1/2" Teck connector, 0.600-0.760"', 'ea', 36.04, 'EECOL', ''],
+      ['WIRE-013', '1/2" Teck connector, 0.725-0.885"', 'ea', 34.65, 'EECOL', ''],
+      ['WIRE-021', '3/4" 90-degree cable connector', 'ea', 4.53, 'EECOL', ''],
+      ['WIRE-022', '3/4" cable connector (25/box)', 'ea', 1.95, 'EECOL', ''],
+      ['WIRE-024', '3/4" teck connector 1.025-1.205', 'ea', 51.18, 'EECOL', ''],
+      ['WIRE-032', 'ABB STX050-464 1/2" Star Teck XP connector', 'ea', 91.77, 'Bartle & Gibson', '2026-07-31'],
+      ['CONN-001', '1" 2-screw connector', 'ea', 2.76, 'Bartle & Gibson', ''],
+      ['CONN-030', '1-1/4" 2-screw connector', 'ea', 3.90, 'Bartle & Gibson', ''],
+      ['CONDT-043', '3/8" BX connector (CON-03)', 'ea', 0.46, 'EECOL', ''],
+      ['CONDT-054', 'Loomex/BX connector (3/8") duplex L-16', 'ea', 1.70, 'EECOL', ''],
+      ['CONN-031', '1-1/4" insulated grounding bushing', 'ea', 16.85, 'EECOL', ''],
+      ['CONN-017', '1-1/2" insulated grounding bushing', 'ea', 17.33, 'EECOL', ''],
+      ['CONN-055', '2" insulated grounding bushing', 'ea', 22.11, 'EECOL', ''],
+      ['CONN-004', '1" plastic bushing (100/box)', 'ea', 0.29, 'Bartle & Gibson', '2025-11-24'],
+      ['CONN-070', '3/4" plastic bushing (200/box)', 'ea', 0.17, 'EECOL', '2025-12-23'],
+      ['CONN-097', 'Iberville CI2706 3/4" plastic bushing', 'ea', 0.14, 'Bartle & Gibson', '2025-11-25'],
+      ['CONDT-029', '1/2" x 10\' PVC conduit', 'ft', 0.93, 'EECOL', ''],
+      ['CONDT-039', '3/4" x 10\' PVC conduit', 'ft', 1.10, 'EECOL', ''],
+      ['CONDT-009', '1" x 10\' PVC conduit (32110)', 'ft', 1.65, 'EECOL', ''],
+      ['CONDT-045', '(32112) 1-1/4 in x 10 ft PVC conduit', 'ft', 2.06, 'EECOL', ''],
+      ['CONDT-018', '1-1/2" x 10\' PVC conduit', 'ft', 2.76, 'EECOL', ''],
+      ['CONDT-055', 'Royal 3 in x 10 ft rigid PVC conduit (per ft)', 'ft', 5.62, 'Bartle & Gibson', ''],
+      ['WIRE-045', 'Cable straps', 'ea', 0.19, 'Bartle & Gibson', '2025-11-19'],
+      ['WIRE-041', 'Aluminum cable strap (250/box)', 'ea', 0.29, 'EECOL', ''],
+      ['CONDT-001', '1" 2-hole EMT strap (100/box)', 'ea', 0.32, 'EECOL', ''],
+      ['CONDT-030', '3/4" 2-hole EMT strap (125/box)', 'ea', 0.23, 'EECOL', ''],
+      ['STRAP-001', '1" 2-hole rigid strap', 'ea', 0.51, 'Bartle & Gibson', ''],
+      ['BRK-017', 'Square D QO loadcentre, main breaker 100A 240V 1-phase, 16 spaces', 'ea', 190.34, 'EECOL', ''],
+      ['BRK-001', '100A meter socket combo breaker w/ gutter', 'ea', 429.25, 'Bartle & Gibson', ''],
+      ['BRK-002', '100A socket for SD breaker c/w gutter', 'ea', 424.31, 'EECOL', ''],
+      ['PNL-002', 'Fusible disconnect 100A 2P 240V 3R', 'ea', 539.15, 'Bartle & Gibson', '2025-11-17'],
+      ['PNL-005', 'Microlectric PL27-INTCV polyphase meter socket, 7-jaw 200A/600V OH-UG', 'ea', 744.82, 'Bartle & Gibson', '2026-03-12'],
+      ['PNL-003', 'Hammond EP2424 Eclipse inner panel', 'ea', 55.08, 'Bartle & Gibson', '2025-11-25'],
+      ['PNL-001', '100A 600V 4-jaw meter socket c/w insulator', 'ea', 95.99, 'Bartle & Gibson', ''],
+      ['BOX-027', 'Hammond CHKO664 6x6x4 hinged junction box', 'ea', 10.35, 'Bartle & Gibson', '2025-11-25'],
+      ['BOX-028', 'Hammond CHKO884 8x8x4 hinged junction box', 'ea', 15.14, 'Bartle & Gibson', '2025-12-01'],
+      ['BOX-034', 'PVC junction box 4x4x2 (12/box)', 'ea', 8.58, 'EECOL', ''],
+      ['BOX-035', 'PVC junction box 5x5x2', 'ea', 21.27, 'EECOL', ''],
+      ['COVER-033', 'Ground plate', 'ea', 38.20, 'Bartle & Gibson', '2026-05-07'],
+      ['MISC-023', '5/8" x 10\' galvanized ground rod', 'ea', 55.26, 'EECOL', ''],
+      ['STRAP-010', 'Brass ground clamp for 1/2"-1" water pipe', 'ea', 8.12, 'Bartle & Gibson', '2026-03-13'],
+      ['CONN-002', '1" insulated grounding bushing', 'ea', 8.69, 'EECOL', ''],
+      ['CONN-086', 'ABB L200GRL ground locknut with lug, 2"', 'ea', 30.64, 'Bartle & Gibson', '2026-04-13']
+    ].map(r => ({ sku: r[0], desc: r[1], unit: r[2], price: r[3], supplier: r[4], bought: r[5] }))
+  };
+
+
+  /* ------------------------------------------------------------------
+   * Built-in gear catalogue.
+   *
+   * Panels and breakers that get asked for often, so the equipment search finds them on site before
+   * the sheet has ever carried one. These are TYPICAL figures, anchored to the rows Paul's own sheet
+   * does carry (THQL 1-pole 20 A at $9.79, 2-pole 20 A at $23.84, 1-pole GFCI at $125.54, 2-pole
+   * GFCI at $219.65, QO 100 A 16-space loadcentre at $190.34). A real row off the price sheet always
+   * outranks one of these, and anything priced from here is tagged as a typical price, never as the
+   * sheet.
+   * ------------------------------------------------------------------ */
+
+  // [poles, amps, kind, base price]  kind: '' standard, G GFCI, A AFCI, T tandem
+  const CAT_BRK = [
+    [1, 15, '', 9.80], [1, 20, '', 9.80], [1, 30, '', 16.00], [1, 40, '', 22.00], [1, 50, '', 26.00],
+    [2, 15, '', 22.00], [2, 20, '', 23.80], [2, 30, '', 28.00], [2, 40, '', 36.00], [2, 50, '', 42.00],
+    [2, 60, '', 50.00], [2, 70, '', 78.00], [2, 80, '', 88.00], [2, 100, '', 115.00], [2, 125, '', 175.00],
+    [3, 20, '', 95.00], [3, 30, '', 105.00], [3, 60, '', 130.00], [3, 100, '', 210.00],
+    [1, 15, 'G', 120.00], [1, 20, 'G', 125.50], [2, 20, 'G', 219.65], [2, 30, 'G', 230.00],
+    [2, 40, 'G', 245.00], [2, 50, 'G', 255.00], [2, 60, 'G', 270.00],
+    [1, 15, 'A', 62.00], [1, 20, 'A', 62.00],
+    [1, 15, 'T', 34.00], [1, 20, 'T', 34.00]
+  ];
+  // family: [label, part prefix, price multiplier]
+  const CAT_FAM = [
+    ['ABB/GE THQL', 'THQL', 1.00],
+    ['Square D QO', 'QO', 1.15],
+    ['Eaton BR', 'BR', 0.95]
+  ];
+
+  function catalogueBreakers() {
+    const out = [];
+    CAT_FAM.forEach(function (fam, fi) {
+      CAT_BRK.forEach(function (b, bi) {
+        const poles = b[0], amps = b[1], kind = b[2];
+        let name;
+        if (kind === 'G') name = fam[0] + ' ' + poles + '-pole ' + amps + 'A GFCI breaker, 120/240V';
+        else if (kind === 'A') name = fam[0] + ' ' + poles + '-pole ' + amps + 'A AFCI arc-fault breaker, 120V';
+        else if (kind === 'T') name = fam[0] + ' tandem ' + amps + '/' + amps + 'A breaker, 120V';
+        else name = fam[0] + ' ' + poles + '-pole ' + amps + 'A breaker, ' + (poles === 1 ? '120V' : (poles === 3 ? '600V' : '120/240V')) + ' 10kAIC';
+        out.push({
+          sku: 'CAT-B' + (fi + 1) + String(bi + 1).padStart(2, '0'),
+          desc: name, unit: 'ea', price: Math.round(b[3] * fam[2] * 100) / 100,
+          supplier: '', bought: '', builtin: true
+        });
+      });
+    });
+    return out;
+  }
+
+  // [amps, spaces, main, enclosure, family, price]
+  const CAT_PNL = [
+    [60, 12, 'MB', 'indoor', 'Eaton BR', 120], [60, 12, 'MB', '3R outdoor', 'Eaton BR', 190],
+    [100, 12, 'ML', 'indoor', 'Eaton BR', 105], [100, 12, 'ML', '3R outdoor', 'Eaton BR', 175],
+    [100, 16, 'ML', 'indoor', 'Square D QO', 120],
+    [100, 24, 'MB', 'indoor', 'Square D QO', 255], [100, 24, 'MB', '3R outdoor', 'Square D QO', 385],
+    [100, 24, 'MB', 'indoor', 'Eaton BR', 200], [100, 24, 'MB', '3R outdoor', 'Eaton BR', 315],
+    [100, 24, 'MB', 'indoor', 'ABB/GE', 205], [100, 24, 'MB', '3R outdoor', 'ABB/GE', 325],
+    [125, 24, 'MB', 'indoor', 'Square D QO', 270], [125, 32, 'MB', 'indoor', 'Eaton BR', 260],
+    [200, 40, 'MB', 'indoor', 'Square D QO', 390], [200, 40, 'MB', '3R outdoor', 'Square D QO', 545],
+    [200, 40, 'MB', 'indoor', 'Eaton BR', 320], [200, 40, 'MB', '3R outdoor', 'Eaton BR', 470],
+    [200, 40, 'MB', 'indoor', 'ABB/GE', 330], [200, 42, 'MB', '3R outdoor', 'ABB/GE', 495],
+    [200, 40, 'MB', '3R outdoor combination meter socket', 'Eaton BR', 890],
+    [100, 24, 'MB', '3R outdoor combination meter socket', 'Eaton BR', 690]
+  ];
+
+  function cataloguePanels() {
+    return CAT_PNL.map(function (p2, i) {
+      const main = p2[2] === 'MB' ? 'main breaker' : 'main lug';
+      return {
+        sku: 'CAT-P' + String(i + 1).padStart(2, '0'),
+        desc: p2[4] + ' loadcentre panel, ' + p2[0] + 'A ' + main + ' 120/240V, ' + p2[1] + ' spaces, ' + p2[3],
+        unit: 'ea', price: p2[5], supplier: '', bought: '', builtin: true
+      };
+    });
+  }
+
+  const CAT_MISC = [
+    ['CAT-D01', 'Non-fusible disconnect 60A 2P 240V, 3R outdoor', 145],
+    ['CAT-D02', 'Non-fusible disconnect 100A 2P 240V, 3R outdoor', 215],
+    ['CAT-D03', 'Non-fusible disconnect 200A 2P 240V, 3R outdoor', 430],
+    ['CAT-D04', 'Fusible disconnect 60A 2P 240V, 3R outdoor', 320],
+    ['CAT-D05', 'Fusible disconnect 30A 2P 240V, 3R outdoor', 165],
+    ['CAT-D06', 'Non-fusible disconnect 30A 2P 240V, indoor Type 1', 62],
+    ['CAT-S01', '100A splitter box, 3R outdoor', 240],
+    ['CAT-S02', '200A splitter box, 3R outdoor', 410]
+  ].map(function (m) {
+    return { sku: m[0], desc: m[1], unit: 'ea', price: m[2], supplier: '', bought: '', builtin: true };
+  });
+
+  function catalogue() { return catalogueBreakers().concat(cataloguePanels()).concat(CAT_MISC); }
+
+  const TYPE_KEYS = {
+    NMD90: ['NMD90'], NMWU: ['NMWU'], ACWU90: ['ACWU90'], TECK90: ['TECK90'], AC90: ['AC90'],
+    RW90_PVC: ['RW90'], RW90_STEEL: ['RW90'], RWU90: ['RWU90', 'RW90'], TWU: ['TWU'], USEB90: ['USEB90']
+  };
+
+  function clean(s) { return String(s || '').replace(/\\/g, '').replace(/\s+/g, ' ').trim(); }
+
+  function normSize(s) {
+    s = String(s).replace(/\s+/g, '');
+    if (/^[1-4]\/0$/.test(s)) return s;
+    if (/^\d+$/.test(s)) {
+      const n = parseInt(s, 10);
+      if ([14, 12, 10, 8, 6, 4, 3, 2, 1].includes(n)) return String(n);
+      if ([250, 300, 350, 400, 500, 600, 700, 750, 800, 900, 1000].includes(n)) return String(n);
+    }
+    return null;
+  }
+
+  // Parse a price-list description into cable attributes. Returns null when the row is not a cable or wire.
+  function parseCable(desc) {
+    const d = clean(desc);
+    const u = d.toUpperCase();
+    if (!u) return null;
+    if (/CONNECTOR|LOCKNUT|STRAP|CLAMP|STAPLE|FITTING|BUSHING|\bLUGS?\b|END CAP|STAPLER|MARKER|\bTAPE\b|HEAT SHRINK|INSTRUMENT|\bLVT\b|SHIELD|CAT\s*[56]|GIGAMAX|HEAT CABLE|THERMOSTAT/.test(u)) return null;
+    let type = null;
+    if (/NMWU/.test(u)) type = 'NMWU';
+    else if (/NMD\s*-?\s*90|LOOMEX|ROMEX/.test(u)) type = 'NMD90';
+    else if (/ACWU/.test(u)) type = 'ACWU90';
+    else if (/TECK/.test(u)) type = 'TECK90';
+    else if (/\bAC\s*-?\s*90\b|\bBX\b|ARMOU?RED CABLE/.test(u)) type = 'AC90';
+    else if (/RWU\s*-?\s*90/.test(u)) type = 'RWU90';
+    else if (/RW\s*-?\s*90|\bT\s*-?\s*90\b|\bTHHN\b|\bTWN\s*-?\s*75\b|\bXLPE\b|\bXHHW\b/.test(u)) type = 'RW90';
+    else if (/\bTWU\b/.test(u)) type = 'TWU';
+    else if (/USEB/.test(u)) type = 'USEB90';
+    if (!type) return null;
+
+    let material = /ALUM|\bAL\b/.test(u) ? 'Al' : (/COPPER|\bCU\b/.test(u) ? 'Cu' : (type === 'ACWU90' || type === 'USEB90' ? 'Al' : 'Cu'));
+
+    let cond = null, size = null, m;
+    if ((m = u.match(/\b(\d)\s*C\s*[-/ ]?\s*#?\s*(\d\/0|\d{1,4})\b/))) { cond = +m[1]; size = normSize(m[2]); }
+    else if ((m = u.match(/\b(\d)\s*-?\s*(?:CONDUCTOR|COND|WIRE)S?\s*,?\s*#?\s*(\d\/0|\d{1,4})\b/))) { cond = +m[1]; size = normSize(m[2]); }
+    else if ((m = u.match(/\b(1[0248]|[1-9])\s*\/\s*([2-4])\b(?!\s*\/\s*0)/))) { size = normSize(m[1]); cond = +m[2]; }
+    else if ((m = u.match(/#\s*(\d\/0|\d{1,4})\b/))) { size = normSize(m[1]); }
+    else if ((m = u.match(/\b([1-4]\/0)\b/))) { size = normSize(m[1]); }
+    else if ((m = u.match(/\b(\d{3,4})\s*(?:KCMIL|MCM)\b/))) { size = normSize(m[1]); }
+    else if ((m = u.match(/\b(\d{1,2})\s*AWG\b/))) { size = normSize(m[1]); }
+    if (!size) return null;
+    if (cond == null && (m = u.match(/\b(\d)\s*-?\s*(?:CONDUCTOR|COND)\b/))) cond = +m[1];
+    const perM = /PER\s*M(?:ETRE|ETER)?\b|\/\s*M\b|PER\s*M\)/.test(u);
+    const spool = (m = u.match(/\b(\d{2,3})\s*M\b/)) ? +m[1] : null;
+    return { type, material, size, cond, perM, spool };
+  }
+
+  function parseBreaker(desc) {
+    const d = clean(desc);
+    const u = d.toUpperCase().replace(/\d+\s*K\s*A?\s*I\.?C\b|\d+\s*KAIC|\d+\s*KA\b/g, ' ');
+    if (!/BREAKER|\bCB\b|\bQO\b|\bTHQL|\bBAB\b|\bBR\d/.test(u)) return null;
+    if (/LOADCENT|PANEL|SOCKET|GUTTER|METER/.test(u)) return null;
+    let poles = null, m;
+    if ((m = u.match(/\b([123])\s*-?\s*P(?:OLE)?S?\b/))) poles = +m[1];
+    else if (/SINGLE\s*-?\s*POLE/.test(u)) poles = 1;
+    else if (/DOUBLE\s*-?\s*POLE|TWO\s*-?\s*POLE/.test(u)) poles = 2;
+    else if ((m = u.match(/THQL\s*([12])\d{2,3}\b|BAB\s*([12])\d{3}\b|QO\s*([123])\d{2}\b/))) poles = +(m[1] || m[2] || m[3]);
+    let amps = null;
+    const am = [...u.matchAll(/\b(\d{2,3})\s*A(?:MP)?\b/g)].map(x => +x[1]).filter(a => a >= 10 && a <= 800 && a !== 120 && a !== 240 && a !== 208 && a !== 600 || [15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 110, 125, 150, 175, 200, 225, 250].includes(a));
+    if (am.length) amps = am[0];
+    else if ((m = u.match(/THQL[12](\d{2,3})\b|BAB[12](\d{3})\b|QO[123](\d{2,3})\b/))) amps = +(m[1] || m[2] || m[3]);
+    if (!amps) return null;
+    const gfci = /GFCI|GFI|GFEP|AFCI|CAFI/.test(u);
+    return { amps, poles, gfci };
+  }
+
+  const TRADE = { '3/8': 0.375, '1/2': 0.5, '3/4': 0.75, '1': 1, '1-1/4': 1.25, '1-1/2': 1.5, '2': 2, '2-1/2': 2.5, '3': 3 };
+
+  // Trade size stated anywhere in a description: 3/4", 1-1/4 in, 2".
+  function tradeOf(desc) {
+    const u = clean(desc).toUpperCase();
+    const m = u.match(/(^|[^0-9/-])(\d(?:-\d\/\d)?|\d\/\d)\s*(?:"|IN\b|INCH)/);
+    if (!m) return null;
+    return (m[2] in TRADE) ? m[2] : null;
+  }
+
+  // The kinds of gear the equipment picker offers. Order matters: the first match wins.
+  const CATEGORIES = [
+    { id: 'panel', label: 'Panels', re: /loadcent|load cent|panelboard|distribution panel|inner panel|\bCDP\b|\bpanel\b/i, not: /\bLED\b|lithonia|luminaire|fixture|directory/i },
+    { id: 'disconnect', label: 'Disconnects', re: /disconnect|safety switch|fusible|unfused|non-?fused/i, not: null },
+    { id: 'breaker', label: 'Breakers', re: /breaker|\bTHQL|\bBAB\b|\bQO\b/i, not: /loadcent|socket|gutter/i },
+    { id: 'meter', label: 'Meter sockets', re: /meter socket|meter base|\d-?jaw/i, not: null },
+    { id: 'box', label: 'Boxes, splitters', re: /splitter|junction box|gutter|trough|enclosure|hinged|\bJB\b/i, not: null },
+    { id: 'all', label: 'Everything', re: /./, not: null }
+  ];
+
+  function categoryOf(desc, sku) {
+    for (let i = 0; i < CATEGORIES.length - 1; i++) {
+      const c = CATEGORIES[i];
+      if (c.re.test(desc) && !(c.not && c.not.test(desc))) return c.id;
+    }
+    if (/^BRK/i.test(sku || '')) return 'breaker';
+    if (/^PNL/i.test(sku || '')) return 'panel';
+    return null;
+  }
+
+  // Search the sheet for the equipment picker.
+  function searchRows(rows, opts) {
+    const text = String(opts.text || '').trim().toLowerCase();
+    const words = text ? text.split(/\s+/) : [];
+    const cat = opts.category && opts.category !== 'all' ? opts.category : null;
+    const out = rows.filter(function (r) {
+      if (r.price == null || !r.desc) return false;
+      if (cat && r.category !== cat) return false;
+      if (!words.length) return true;
+      const hay = (r.desc + ' ' + r.sku).toLowerCase();
+      return words.every(function (w) { return hay.indexOf(w) >= 0; });
+    });
+    out.sort(function (a, b) {
+      if (!!a.builtin !== !!b.builtin) return a.builtin ? 1 : -1;   // the real sheet first
+      if (words.length) {
+        const ai = a.desc.toLowerCase().indexOf(words[0]), bi = b.desc.toLowerCase().indexOf(words[0]);
+        if (ai !== bi) return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+      }
+      return a.desc.localeCompare(b.desc);
+    });
+    return out.slice(0, opts.limit || 40);
+  }
+
+  function parseConnector(desc) {
+    const d = clean(desc);
+    const u = d.toUpperCase();
+    if (!/CONNECTOR/.test(u)) return null;
+    if (/LOCKNUT|BUSHING|COUPLING|GIGAMAX|\bRJ|CAT\s*[56]|SPEAKER|LUG\b/.test(u)) return null;
+    // conduit fittings are not cable connectors
+    if (/EMT|RIGID|LIQUID\s*-?TIGHT|LIQUIDTIGHT|\bFLEX\b|SET\s*-?SCREW|COMPRESSION/.test(u)) return null;
+
+    let kind = 'dry';
+    if (/STAR\s*TECK/.test(u) && /\bXP\b/.test(u)) kind = 'xp';
+    else if (/TECK/.test(u)) kind = 'teck';
+    else if (/\bBX\b|LOOMEX|ARMOU?RED|\bAC\s*-?90\b/.test(u)) kind = 'dry';
+
+    // trade size, e.g. 1-1/4" or 3/4 in
+    let trade = null, m;
+    if ((m = u.match(/(^|[^0-9/-])(\d(?:-\d\/\d)?|\d\/\d)\s*(?:"|IN\b|INCH)/))) trade = m[2];
+    if (trade && !(trade in TRADE)) trade = null;
+
+    // the cable diameter range a teck gland accepts, e.g. 1.187-1.375
+    let odMin = null, odMax = null;
+    if ((m = u.match(/(\d?\.\d{2,3})\s*(?:-|TO)\s*(\d?\.\d{2,3})/))) { odMin = parseFloat(m[1]); odMax = parseFloat(m[2]); }
+
+    const angle = /90\s*-?\s*(?:DEG|DEGREE)/.test(u);
+    const screws = /2\s*-?SCREW/.test(u);
+    return { kind, trade, tradeIn: trade ? TRADE[trade] : null, odMin, odMax, angle, screws };
+  }
+
+  /**
+   * Pick the connector for one end of a cable run.
+   * wet  -> a teck gland, chosen by the cable diameter when the sheet prints a range
+   * dry  -> a plain cable connector, chosen by trade size
+   * Returns { row, fit } where fit is 'range', 'trade', 'nearest' or 'none'.
+   */
+  function pickConnector(rows, opts) {
+    const wet = !!opts.wet;
+    const cand = rows.filter(function (r) { return r.connector && r.price != null && r.connector.kind !== 'xp'; });
+    const fam = cand.filter(function (r) { return wet ? r.connector.kind === 'teck' : r.connector.kind === 'dry'; });
+    if (!fam.length) return { row: null, fit: 'none' };
+    const straight = fam.filter(function (r) { return !r.connector.angle; });
+    const pool = straight.length ? straight : fam;
+
+    if (wet && opts.od) {
+      const inRange = pool.filter(function (r) {
+        const c = r.connector;
+        return c.odMin != null && opts.od >= c.odMin - 1e-9 && opts.od <= c.odMax + 1e-9;
+      });
+      if (inRange.length) {
+        inRange.sort(function (a, b) { return a.price - b.price; });
+        return { row: inRange[0], fit: 'range' };
+      }
+      const ranged = pool.filter(function (r) { return r.connector.odMin != null; });
+      if (ranged.length) {
+        ranged.sort(function (a, b) { return gap(a, opts.od) - gap(b, opts.od); });
+        return { row: ranged[0], fit: 'nearest' };
+      }
+    }
+
+    const want = opts.trade ? TRADE[opts.trade] : null;
+    const exact = pool.filter(function (r) { return r.connector.trade === opts.trade; });
+    if (exact.length) {
+      exact.sort(function (a, b) { return a.price - b.price; });
+      return { row: exact[0], fit: 'trade' };
+    }
+    const sized = pool.filter(function (r) { return r.connector.tradeIn != null; });
+    if (!sized.length) return { row: null, fit: 'none' };
+    sized.sort(function (a, b) { return Math.abs(a.connector.tradeIn - (want || 1)) - Math.abs(b.connector.tradeIn - (want || 1)); });
+    return { row: sized[0], fit: 'nearest' };
+  }
+
+  function gap(r, od) {
+    const c = r.connector;
+    if (od < c.odMin) return c.odMin - od;
+    if (od > c.odMax) return od - c.odMax;
+    return 0;
+  }
+
+  // Convert a sheet row into a normalised record with a per-metre price where it can be worked out.
+  function normalizeRow(r) {
+    const price = typeof r.price === 'number' ? r.price : parseFloat(String(r.price || '').replace(/[^0-9.]/g, ''));
+    const rec = { sku: clean(r.sku), desc: clean(r.desc), unit: clean(r.unit).toLowerCase(), price: isFinite(price) ? price : null,
+      supplier: clean(r.supplier), bought: clean(r.bought).slice(0, 10), lowest: r.lowest, cheapestAt: clean(r.cheapestAt), parts: clean(r.parts) };
+    const cable = parseCable(rec.desc);
+    if (cable) {
+      rec.cable = cable;
+      let perM = null, note = '';
+      const unitSpool = rec.unit.match(/^(\d{2,4})\s*m$/);
+      if (rec.price != null) {
+        if (cable.perM || rec.unit === 'm' || /^met(re|er)s?$/.test(rec.unit) || rec.unit === '/m' || rec.unit === 'per m') { perM = rec.price; }
+        else if (rec.unit === 'ft' || rec.unit === 'feet' || rec.unit === 'foot') { perM = rec.price * 3.2808; note = 'converted from per ft'; }
+        else if (unitSpool) { perM = rec.price / +unitSpool[1]; note = 'per ' + unitSpool[1] + ' m spool'; }
+        else if (cable.spool && rec.price / cable.spool < 0.3) { perM = rec.price; note = 'assumed per metre'; }
+        else if (cable.spool) { perM = rec.price / cable.spool; note = 'per ' + cable.spool + ' m spool'; }
+        else { perM = rec.price; note = 'unit not stated, assumed per metre'; }
+      }
+      rec.perM = perM;
+      rec.unitNote = note;
+    }
+    if (r.builtin) rec.builtin = true;
+    rec.trade = tradeOf(rec.desc);
+    rec.category = categoryOf(rec.desc, rec.sku);
+    const conn = parseConnector(rec.desc);
+    if (conn) rec.connector = conn;
+    const brk = rec.sku.toUpperCase().startsWith('BRK') || /BREAKER/i.test(rec.desc) ? parseBreaker(rec.desc) : null;
+    if (brk) rec.breaker = brk;
+    return rec;
+  }
+
+  function normalizeAll(rows) { return (rows || []).map(normalizeRow); }
+
+  // Rank the cable rows for a wanted cable.
+  function findCable(rows, want) {
+    const keys = TYPE_KEYS[want.method] || [want.method];
+    const wantSize = String(want.size);
+    const wantCond = want.cond || null;
+    const scored = [];
+    for (const r of rows) {
+      const c = r.cable;
+      if (!c || r.perM == null) continue;
+      if (c.material !== want.material) continue;
+      const typeRank = keys.indexOf(c.type);
+      if (typeRank < 0) continue;
+      if (c.size !== wantSize) continue;
+      let condRank = 2;
+      if (wantCond && c.cond === wantCond) condRank = 0;
+      else if (c.cond == null) condRank = 1;
+      scored.push({ row: r, typeRank, condRank });
+    }
+    scored.sort((a, b) => a.typeRank - b.typeRank || a.condRank - b.condRank || (b.row.bought || '').localeCompare(a.row.bought || '') || a.row.perM - b.row.perM);
+    return scored.map(s => s.row);
+  }
+
+  // Same type and material, other sizes: helps when the wanted size is not on the sheet.
+  function nearbySizes(rows, want) {
+    const keys = TYPE_KEYS[want.method] || [want.method];
+    const out = [];
+    for (const r of rows) {
+      const c = r.cable;
+      if (!c || r.perM == null || c.material !== want.material || keys.indexOf(c.type) < 0) continue;
+      out.push(r);
+    }
+    return out;
+  }
+
+  // Find a stocked item by description, newest purchase first.
+  function findByText(rows, re, notRe) {
+    var out = rows.filter(function (r) {
+      return r.price != null && re.test(r.desc) && !(notRe && notRe.test(r.desc));
+    });
+    out.sort(function (a, b) { return (b.bought || '').localeCompare(a.bought || '') || a.price - b.price; });
+    return out;
+  }
+
+  function findBreakers(rows, amps, poles) {
+    const out = rows.filter(r => r.breaker && r.price != null && r.breaker.amps === amps && (!poles || !r.breaker.poles || r.breaker.poles === poles));
+    out.sort((a, b) => (a.breaker.gfci ? 1 : 0) - (b.breaker.gfci ? 1 : 0) || (b.bought || '').localeCompare(a.bought || '') || a.price - b.price);
+    return out;
+  }
+
+  // Storage
+  const KEY = 'proVD.prices.v1';
+  function loadCache() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) { const o = JSON.parse(raw); if (o && Array.isArray(o.rows) && o.rows.length) return o; }
+    } catch (e) { /* storage unavailable */ }
+    return null;
+  }
+  function saveCache(obj) {
+    try { localStorage.setItem(KEY, JSON.stringify(obj)); return true; } catch (e) { return false; }
+  }
+
+  // Fetch the feed. Never waits longer than timeoutMs. Resolves {ok, data|error}.
+  async function fetchFeed(url, key, timeoutMs) {
+    if (!url) return { ok: false, error: 'No price feed address set' };
+    const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = setTimeout(() => ctrl && ctrl.abort(), Math.max(1000, timeoutMs || 4000));
+    try {
+      let full = url;
+      if (/docs\.google\.com\/spreadsheets\/d\//.test(url)) {
+        const id = url.match(/\/d\/([A-Za-z0-9_-]+)/)[1];
+        full = 'https://docs.google.com/spreadsheets/d/' + id + '/gviz/tq?tqx=out:csv&sheet=Materials';
+      } else {
+        full = url + (url.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(key || '') + '&t=' + Date.now();
+      }
+      const res = await fetch(full, { signal: ctrl ? ctrl.signal : undefined, cache: 'no-store', credentials: 'omit' });
+      const text = await res.text();
+      let data;
+      if (text.trim().startsWith('{')) {
+        data = JSON.parse(text);
+        if (!data.ok) return { ok: false, error: data.error || 'Feed refused the request' };
+      } else {
+        data = csvToFeed(text);
+      }
+      if (!Array.isArray(data.rows)) return { ok: false, error: 'Feed returned no rows' };
+      return { ok: true, data: { source: data.sheet || 'sheet', updated: data.updated || null, fetched: new Date().toISOString(), rows: data.rows } };
+    } catch (e) {
+      const aborted = e && (e.name === 'AbortError');
+      return { ok: false, error: aborted ? 'Timed out after ' + Math.round((timeoutMs || 4000) / 1000) + ' s' : (e && e.message) || 'Could not reach the sheet' };
+    } finally { clearTimeout(timer); }
+  }
+
+  // Minimal CSV parser for the published-sheet path.
+  function parseCSV(text) {
+    const rows = []; let row = [], field = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (q) {
+        if (ch === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else q = false; }
+        else field += ch;
+      } else if (ch === '"') q = true;
+      else if (ch === ',') { row.push(field); field = ''; }
+      else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(field); rows.push(row); row = []; field = ''; }
+      else field += ch;
+    }
+    if (field.length || row.length) { row.push(field); rows.push(row); }
+    return rows;
+  }
+  function csvToFeed(text) {
+    const rows = parseCSV(text);
+    const hi = rows.findIndex(r => r.some(c => /^sku/i.test(c)) && r.some(c => /^desc/i.test(c)));
+    if (hi < 0) return { rows: [] };
+    const h = rows[hi].map(c => c.toLowerCase());
+    const col = (re) => h.findIndex(c => re.test(c));
+    const ci = { sku: col(/^sku/), desc: col(/^desc/), unit: col(/^unit/), price: col(/^price/), supplier: col(/last bought from/), bought: col(/^last bought$/), lowest: col(/^lowest/), cheapestAt: col(/cheapest/), parts: col(/part number/) };
+    const out = [];
+    for (let i = hi + 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r[ci.sku] || !r[ci.desc]) continue;
+      out.push({ sku: r[ci.sku], desc: r[ci.desc], unit: r[ci.unit], price: r[ci.price], supplier: r[ci.supplier], bought: r[ci.bought], lowest: r[ci.lowest], cheapestAt: r[ci.cheapestAt], parts: r[ci.parts] });
+    }
+    return { rows: out, sheet: 'Materials Price List' };
+  }
+
+  return { SNAPSHOT, catalogue, findByText, parseCable, parseBreaker, parseConnector, pickConnector, TRADE, tradeOf, categoryOf, searchRows, CATEGORIES, normalizeRow, normalizeAll, findCable, nearbySizes, findBreakers, loadCache, saveCache, fetchFeed, parseCSV, csvToFeed, TYPE_KEYS };
+});
+</script>
+<script>/* PRO Electrical | Feed Calculator
+ *
+ * Two runs at most: 'main' and 'sub' (the subpanel feeder). Each is sized on its own and priced on
+ * its own, then the two are added together before the markup tier is chosen, because the tier is a
+ * property of the job, not of a line.
+ */
+(function () {
+  'use strict';
+  var E = window.VDEngine, P = window.VDPrices;
+  var $ = function (s) { return document.querySelector(s); };
+
+  var SETTINGS_KEY = 'proVD.settings.v1';
+  var STATE_KEY = 'proVD.state.v2';
+  var OLD_STATE_KEY = 'proVD.state.v1';
+  var THEME_KEY = 'proVD.theme.v1';
+
+  var DEFAULTS = {
+    feedUrl: '', feedKey: 'pro-vd-7k2m9q',
+    tiers: [{ upTo: 1000, pct: 43 }, { upTo: 5000, pct: 36 }, { upTo: 10000, pct: 30 }, { upTo: null, pct: 20 }],
+    labourRate: 105, travelHours: 0.5, freeRadiusKm: 50, kmRate: 0.70, consPct: 7,
+    permitRes: 250, permitCom: 300, waste: 15, gst: 5, round: true, showInternal: true
+  };
+
+  var RUN_FIELDS = ['system', 'loadMode', 'amps', 'ampsUnit', 'continuous', 'method', 'material', 'len', 'lenUnit',
+    'vdLimit', 'termTemp', 'ambient', 'conductors', 'condAuto', 'neutralCounts', 'pf', 'opTemp',
+    'endSupply', 'endLoad', 'endSupplySku', 'endLoadSku', 'bondOn', 'electrode', 'gndHours', 'gndHoursTouched',
+    'strapSpacing', 'groundBush', 'plasticBush', 'sleeveFt', 'cableSku', 'cableRate', 'brkKey', 'brkRate',
+    'misc', 'miscTouched', 'hours'];
+
+  function newRun(o) {
+    var r = {
+      system: '240-1-3w', loadMode: 'breaker', amps: 100, ampsUnit: 'A', continuous: true,
+      method: 'ACWU90', material: 'Al', len: 30, lenUnit: 'm', vdLimit: 3,
+      termTemp: 75, ambient: 30, conductors: 2, condAuto: true, neutralCounts: false, pf: 1, opTemp: 75,
+      endSupply: 'dry', endLoad: 'dry', endSupplySku: '', endLoadSku: '',
+      bondOn: null, electrode: 'none', gndHours: 0, gndHoursTouched: false,
+      strapSpacing: 1.5, groundBush: null, plasticBush: null, sleeveFt: 0,
+      cableSku: '', cableRate: null, brkKey: '', brkRate: null,
+      misc: 0, miscUnit: '$', miscTouched: false, hours: 6,
+      off: {}   // lines taken off this run's price: cable, breaker, conn, bond, electrode, cons
+    };
+    for (var k in (o || {})) r[k] = o[k];
+    return r;
+  }
+
+  var RUNS = [
+    { id: 'main', label: 'Main feed', title: 'The feed', hint: 'panel to the load' },
+    { id: 'sub', label: 'Subpanel feeder', title: 'Subpanel feeder', hint: 'panel to the subpanel' }
+  ];
+
+  // Circular mil area, used only to estimate a price for a size the sheet has never carried.
+  var AREA = { '14': 4.11, '12': 6.53, '10': 10.38, '8': 16.51, '6': 26.24, '4': 41.74, '3': 52.62, '2': 66.36, '1': 83.69,
+    '1/0': 105.6, '2/0': 133.1, '3/0': 167.8, '4/0': 211.6, '250': 250, '300': 300, '350': 350, '400': 400, '500': 500,
+    '600': 600, '700': 700, '750': 750, '800': 800, '900': 900, '1000': 1000 };
+
+  var KIN = { NMWU: ['NMD90'], NMD90: ['NMWU', 'AC90'], AC90: ['NMD90'], TECK90: ['ACWU90'], ACWU90: ['TECK90'],
+    RW90_PVC: ['RW90_STEEL', 'RWU90'], RW90_STEEL: ['RW90_PVC', 'RWU90'], RWU90: ['RW90_PVC', 'RW90_STEEL'],
+    TWU: ['RWU90', 'RW90_PVC'], USEB90: ['ACWU90'] };
+
+  var settings = load(SETTINGS_KEY, DEFAULTS);
+  var state = loadState();
+
+  var prices = P.loadCache() || P.SNAPSHOT;
+  var rows = allRows(prices);
+  var feedState = 'nofeed';
+  var feedMsg = '';
+  var job = null;   // everything computed, per render
+
+  // The sheet first, then the built-in gear catalogue behind it.
+  function allRows(px) { return P.normalizeAll(px.rows.concat(P.catalogue())); }
+
+  function load(key, dflt) {
+    try {
+      var raw = localStorage.getItem(key);
+      if (!raw) return JSON.parse(JSON.stringify(dflt));
+      var o = JSON.parse(raw), out = JSON.parse(JSON.stringify(dflt));
+      for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) out[k] = o[k];
+      return out;
+    } catch (e) { return JSON.parse(JSON.stringify(dflt)); }
+  }
+
+  function loadState() {
+    var base = { runs: { main: newRun(), sub: newRun({ hours: 4, len: 15 }) }, subOn: false,
+      travelKm: 0, permit: 'none', equipOn: false, equip: [], equipCat: 'panel', equipQ: '',
+      off: {} };   // job lines taken off: equip, labour, travel, permit
+    try {
+      var raw = localStorage.getItem(STATE_KEY);
+      if (raw) {
+        var o = JSON.parse(raw);
+        if (o && o.runs) {
+          base.runs.main = newRun(o.runs.main); base.runs.sub = newRun(o.runs.sub);
+          if (o.off) base.off = o.off;
+          ['subOn', 'travelKm', 'permit', 'equipOn', 'equipCat', 'equipQ'].forEach(function (k) {
+            if (o[k] !== undefined) base[k] = o[k];
+          });
+          if (Array.isArray(o.equip)) base.equip = o.equip;
+          return base;
+        }
+      }
+      // carry over a layout from before the subpanel run existed
+      var old = localStorage.getItem(OLD_STATE_KEY);
+      if (old) {
+        var v1 = JSON.parse(old), carry = {};
+        RUN_FIELDS.forEach(function (f) { if (v1[f] !== undefined) carry[f] = v1[f]; });
+        base.runs.main = newRun(carry);
+        ['travelKm', 'permit', 'equipOn', 'equipCat', 'equipQ'].forEach(function (k) { if (v1[k] !== undefined) base[k] = v1[k]; });
+        if (Array.isArray(v1.equip)) base.equip = v1.equip;
+      }
+    } catch (e) { /* start fresh */ }
+    return base;
+  }
+
+  function save(key, obj) { try { localStorage.setItem(key, JSON.stringify(obj)); } catch (e) { } }
+  function saveState() { save(STATE_KEY, state); }
+
+  function money(n) { return '$' + (Math.round(n * 100) / 100).toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function money0(n) { return '$' + Math.round(n).toLocaleString('en-CA'); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+  function hrs(n) { return n + (n === 1 ? ' hr' : ' hrs'); }
+  function toast(msg) {
+    var t = $('#toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('show'); }, 2200);
+  }
+  function activeRuns() { return state.subOn ? ['main', 'sub'] : ['main']; }
+  function isOff(r, key) { return !!(r && r.off && r.off[key]); }
+  function jobOff(key) { return !!state.off[key]; }
+  function R(id) { return state.runs[id]; }
+  function metres(r) { return r.lenUnit === 'ft' ? Number(r.len) * 0.3048 : Number(r.len); }
+  function fmtLen(r, m) {
+    if (r.lenUnit === 'ft') return Math.round(m / 0.3048) + ' ft';
+    return (m >= 100 ? Math.round(m) : Math.round(m * 10) / 10) + ' m';
+  }
+  function ampsValue(r) {
+    var sys = E.SYSTEMS[r.system];
+    if (r.ampsUnit === 'W') return E.ampsFromWatts(Number(r.amps), sys.V, sys.phase, r.pf);
+    return Number(r.amps);
+  }
+  function daysSince(iso) {
+    if (!iso) return null;
+    var d = (Date.now() - new Date(iso).getTime()) / 86400000;
+    return isFinite(d) ? d : null;
+  }
+  function ago(iso) {
+    var d = daysSince(iso);
+    if (d == null) return '';
+    if (d < 0.0007) return 'just now';
+    if (d < 1 / 24) return Math.round(d * 1440) + ' min ago';
+    if (d < 1) return Math.round(d * 24) + ' hr ago';
+    if (d < 2) return 'yesterday';
+    return Math.round(d) + ' days ago';
+  }
+  function bumpTrade(t) {
+    var order = ['1/2', '3/4', '1', '1-1/4', '1-1/2', '2', '2-1/2', '3'];
+    var i = order.indexOf(t);
+    return i < 0 ? '1' : order[Math.min(order.length - 1, i + 1)];
+  }
+
+  /* ---------- sizing and pricing, one run at a time ---------- */
+
+  function sizeRun(r) {
+    if (r.condAuto) r.conductors = E.conductorCount(r.system, r.neutralCounts);
+    return E.size({
+      system: r.system, loadMode: r.loadMode, amps: ampsValue(r), continuous: r.continuous,
+      material: r.material, method: r.method, termTemp: Number(r.termTemp),
+      ambient: Number(r.ambient), conductors: Number(r.conductors),
+      lengthM: metres(r), vdLimit: Number(r.vdLimit), pf: Number(r.pf), opTemp: Number(r.opTemp)
+    });
+  }
+
+  function estimatePerM(want, r) {
+    var near = P.nearbySizes(rows, want).filter(function (x) { return x.cable && AREA[x.cable.size]; });
+    var swapped = null;
+    if (!near.length) {
+      var alts = KIN[want.method] || [];
+      for (var a = 0; a < alts.length && !near.length; a++) {
+        near = P.nearbySizes(rows, { method: alts[a], material: want.material })
+          .filter(function (x) { return x.cable && AREA[x.cable.size]; });
+        if (near.length) swapped = alts[a];
+      }
+    }
+    if (!near.length) return null;
+    var wantArea = AREA[want.size];
+    near.sort(function (x, y) { return Math.abs(Math.log(AREA[x.cable.size] / wantArea)) - Math.abs(Math.log(AREA[y.cable.size] / wantArea)); });
+    var base = near[0];
+    var f = Math.pow(wantArea / AREA[base.cable.size], 0.9);
+    if (want.cond && base.cable.cond && want.cond !== base.cable.cond) f *= Math.pow(want.cond / base.cable.cond, 0.8);
+    return { perM: base.perM * f, from: base, swapped: swapped };
+  }
+
+  function estimateBreakerPrice(amps, poles) {
+    var cand = rows.filter(function (x) { return x.breaker && x.price != null && (!poles || !x.breaker.poles || x.breaker.poles === poles) && !x.breaker.gfci; });
+    if (!cand.length) return null;
+    cand.sort(function (x, y) { return Math.abs(x.breaker.amps - amps) - Math.abs(y.breaker.amps - amps); });
+    var base = cand[0];
+    return { price: base.price * Math.pow(Math.max(amps, 10) / Math.max(base.breaker.amps, 10), 1.3), from: base };
+  }
+
+  function suggestGndHours(r) {
+    var h = 0;
+    if (r.electrode === 'plate') h += 1;
+    else if (r.electrode === 'rods') h += 1.5;
+    else if (r.electrode === 'pipe') h += 0.5;
+    var meth = E.METHODS[r.method];
+    var bondWanted = r.bondOn == null ? (meth.bond === 'separate') : !!r.bondOn;
+    if (bondWanted) h += 0.5;
+    return h;
+  }
+
+  function priceRun(r, res) {
+    var sys = res.system, method = res.method, rec = res.recommended;
+    var runM = metres(r);
+    var out = { lines: [], cost: 0 };
+
+    // Cable
+    var cableCost = 0, cable = null;
+    if (rec) {
+      var want = { method: r.method, material: r.material, size: rec.size, cond: method.family === 'wire' ? null : sys.cable };
+      var matches = P.findCable(rows, want);
+      var pick = null;
+      if (r.cableSku) { for (var i = 0; i < matches.length; i++) if (matches[i].sku === r.cableSku) pick = matches[i]; }
+      if (!pick) pick = matches[0] || null;
+      var buy = E.purchaseLength(runM, rec.size, settings.waste, settings.round);
+      var strands = method.family === 'wire' ? sys.cable : 1;
+      var perM = null, src = 'estimated', note = '';
+      if (r.cableRate != null && r.cableRate !== '' && isFinite(r.cableRate)) { perM = Number(r.cableRate); src = 'manual'; note = 'Your price'; }
+      else if (pick) {
+        perM = pick.perM; src = 'sheet';
+        note = pick.desc + (pick.supplier ? ' | ' + pick.supplier : '') + (pick.bought ? ' | ' + pick.bought : '') + (pick.unitNote ? ' | ' + pick.unitNote : '');
+      } else {
+        var g = estimatePerM(want, r);
+        if (g) {
+          perM = g.perM;
+          note = 'Scaled from ' + g.from.desc + ' at ' + money(g.from.perM) + '/m' +
+            (g.swapped ? '. Nothing in ' + r.method.replace('_', ' ') + ' on the sheet yet, so check this one' : '');
+        } else note = 'No cable of this type on the sheet. Put a price in.';
+      }
+      cableCost = perM != null ? perM * buy.buy * strands : 0;
+      cable = { size: rec.size, cond: sys.cable, strands: strands, matches: matches, pick: pick, perM: perM,
+        src: src, note: note, buy: buy, cost: cableCost };
+      out.cable = cable;
+    }
+
+    // Breaker
+    var brkCost = 0, brk = null;
+    if (rec && rec.breaker) {
+      var poles = sys.phase === 3 ? 3 : (sys.V > 130 ? 2 : 1);
+      var bmatch = P.findBreakers(rows, rec.breaker, poles);
+      var bpick = null;
+      if (r.brkKey) { for (var j = 0; j < bmatch.length; j++) if (bmatch[j].sku === r.brkKey) bpick = bmatch[j]; }
+      if (!bpick) bpick = bmatch[0] || null;
+      var bp = null, bsrc = 'estimated', bnote = '';
+      if (r.brkRate != null && r.brkRate !== '' && isFinite(r.brkRate)) { bp = Number(r.brkRate); bsrc = 'manual'; bnote = 'Your price'; }
+      else if (bpick) {
+        bp = bpick.price; bsrc = bpick.builtin ? 'builtin' : 'sheet';
+        bnote = bpick.desc + (bpick.supplier ? ' | ' + bpick.supplier : '') + (bpick.bought ? ' | ' + bpick.bought : '') +
+          (bpick.builtin ? ' | typical price, not off your sheet' : '');
+      }
+      else {
+        var gb = estimateBreakerPrice(rec.breaker, poles);
+        if (gb) { bp = gb.price; bnote = 'Scaled from ' + gb.from.desc + ' at ' + money(gb.from.price); }
+        else bnote = 'No breaker of this size on the sheet.';
+      }
+      brkCost = bp || 0;
+      brk = { amps: rec.breaker, poles: poles, matches: bmatch, pick: bpick, price: bp, src: bsrc, note: bnote, cost: brkCost };
+      out.breaker = brk;
+    }
+
+    // Connectors, one per end, on cable runs only
+    var connCost = 0, conn = null;
+    if (rec && method.family === 'cable') {
+      var od = E.cableOD(r.method, rec.size, sys.cable);
+      var trade = E.tradeForOD(od) || E.dryTrade(rec.size, sys.cable);
+      var ends = [];
+      [['supply', 'Panel end', r.endSupply, r.endSupplySku], ['load', 'Load end', r.endLoad, r.endLoadSku]].forEach(function (spec) {
+        if (spec[2] === 'none') { ends.push({ key: spec[0], name: spec[1], kind: 'none', options: [] }); return; }
+        var wet = spec[2] === 'wet';
+        var chosen = null, fit = 'none';
+        if (spec[3]) {
+          var byId = rows.filter(function (x) { return x.sku === spec[3] && x.connector; })[0];
+          if (byId) { chosen = byId; fit = 'manual'; }
+        }
+        if (!chosen) { var got = P.pickConnector(rows, { wet: wet, od: od, trade: trade }); chosen = got.row; fit = got.fit; }
+        var options = rows.filter(function (x) {
+          return x.connector && x.price != null && x.connector.kind !== 'xp' &&
+            (wet ? x.connector.kind === 'teck' : x.connector.kind === 'dry');
+        }).sort(function (x, y) { return (x.connector.tradeIn || 0) - (y.connector.tradeIn || 0) || x.price - y.price; });
+        ends.push({ key: spec[0], name: spec[1], kind: wet ? 'wet' : 'dry', row: chosen, fit: fit, options: options, price: chosen ? chosen.price : null });
+      });
+      connCost = ends.reduce(function (t, x) { return t + (x.price || 0); }, 0);
+      var loose = ends.some(function (x) { return x.fit === 'nearest'; });
+      var allFound = ends.every(function (x) { return x.kind === 'none' || !!x.row; });
+      conn = { od: od, trade: trade, ends: ends, cost: connCost, loose: loose, src: allFound && !loose ? 'sheet' : 'estimated' };
+      out.conn = conn;
+    }
+
+    // Bonding, Rule 10-616
+    var bondCost = 0, bond = null;
+    if (rec) {
+      var wanted = r.bondOn == null ? (method.bond === 'separate') : !!r.bondOn;
+      var enterAt = res.governed === 'voltage drop' ? rec.corrected : rec.breaker;
+      var bs = E.bondSize('Cu', enterAt, rec.size);
+      var why = method.bond === 'integral'
+        ? method.label.split(',')[0].split(' (')[0] + ' carries its own bond, Rule 10-616 7)'
+        : (method.bond === 'raceway' ? 'The steel raceway is allowed to serve as the bond, Rule 10-616 6)'
+          : 'Non-metallic raceway, so a bond gets pulled with the run');
+      var bondBuy = null, bondPerM = null, bondNote = '', bondSrc = 'estimated';
+      if (wanted) {
+        bondBuy = E.purchaseLength(runM, bs.size, settings.waste, settings.round);
+        var bmatch2 = P.findCable(rows, { method: 'RW90_PVC', material: 'Cu', size: bs.size, cond: null });
+        var green = bmatch2.filter(function (x) { return /green/i.test(x.desc); });
+        var bsrcRow = green[0] || bmatch2[0] || null;
+        if (bsrcRow) { bondPerM = bsrcRow.perM; bondSrc = 'sheet'; bondNote = bsrcRow.desc + (bsrcRow.supplier ? ' | ' + bsrcRow.supplier : ''); }
+        else {
+          var bg = estimatePerM({ method: 'RW90_PVC', material: 'Cu', size: bs.size, cond: null }, r);
+          if (bg) { bondPerM = bg.perM; bondNote = 'Scaled from ' + bg.from.desc + ' at ' + money(bg.from.perM) + '/m'; }
+          else bondNote = 'No single conductor of this size on the sheet';
+        }
+        bondCost = bondPerM != null ? bondPerM * bondBuy.buy : 0;
+      }
+      bond = { wanted: wanted, size: bs.size, label: bs.label, enterAmps: enterAt, onAmpacity: res.governed === 'voltage drop',
+        provided: method.bond, why: why, buy: bondBuy, perM: bondPerM, src: bondSrc, note: bondNote, cost: bondCost };
+      out.bond = bond;
+    }
+
+    // Grounding electrode
+    var gndCost = 0, gnd = null;
+    if (r.electrode && r.electrode !== 'none') {
+      var items = [], gsrc = 'sheet';
+      var add = function (re, qty, fallback, name) {
+        var hit = P.findByText(rows, re)[0];
+        var price = hit ? hit.price : fallback;
+        if (!hit) gsrc = 'estimated';
+        items.push({ name: hit ? hit.desc : name, qty: qty, each: price, total: price * qty, sku: hit ? hit.sku : null });
+      };
+      if (r.electrode === 'plate') add(/ground plate/i, 1, 38.20, 'Ground plate');
+      if (r.electrode === 'rods') { add(/ground rod/i, 2, 55.26, 'Ground rod'); add(/ground clamp|acorn/i, 2, 8.12, 'Ground clamp'); }
+      if (r.electrode === 'pipe') add(/ground clamp|acorn/i, 1, 8.12, 'Ground clamp');
+      var ecRow = P.findCable(rows, { method: 'RW90_PVC', material: 'Cu', size: '6', cond: null })[0];
+      var ecLen = r.electrode === 'pipe' ? 3 : 6;
+      var ecPerM = ecRow ? ecRow.perM : 4.02;
+      if (!ecRow) gsrc = 'estimated';
+      items.push({ name: '#6 Cu electrode conductor', qty: ecLen, each: ecPerM, total: ecPerM * ecLen, sku: ecRow ? ecRow.sku : null, unit: 'm' });
+      gndCost = items.reduce(function (t, i) { return t + i.total; }, 0);
+      gnd = { kind: r.electrode, items: items, src: gsrc, cost: gndCost };
+      out.electrode = gnd;
+    }
+
+    // Consumables: the percentage is the price, the counted bits are the floor under it
+    var cons = null, consCost = 0;
+    if (rec) {
+      var tradeC = (conn && conn.trade) || E.tradeForOD(E.cableOD(r.method, rec.size, sys.cable)) || E.dryTrade(rec.size, sys.cable);
+      var isWire = method.family === 'wire';
+      var spacing = Math.max(0.5, Number(r.strapSpacing) || 1.5);
+      var cItems = [];
+      var priced = function (re, wantTrade) {
+        var hits = P.findByText(rows, re);
+        if (wantTrade) {
+          var exact = hits.filter(function (x) { return x.trade === wantTrade; });
+          if (exact.length) return exact[0];
+          var sized = hits.filter(function (x) { return x.trade && P.TRADE[x.trade]; });
+          if (sized.length) {
+            var w = P.TRADE[wantTrade] || 1;
+            sized.sort(function (x, y) { return Math.abs(P.TRADE[x.trade] - w) - Math.abs(P.TRADE[y.trade] - w); });
+            return sized[0];
+          }
+        }
+        return hits[0] || null;
+      };
+      var strapQty = Math.ceil(runM / spacing) + 2;
+      var strapRow = isWire ? priced(/2-hole (?:EMT|rigid) strap|EMT strap/i, tradeC) : priced(/cable strap/i, null);
+      cItems.push({ name: strapRow ? strapRow.desc : (isWire ? 'Conduit straps' : 'Cable straps'), qty: strapQty,
+        each: strapRow ? strapRow.price : 0.25, sku: strapRow ? strapRow.sku : null });
+      var gbQty = r.groundBush == null ? (isWire ? 2 : 0) : Math.max(0, Number(r.groundBush) || 0);
+      if (gbQty) {
+        var gbRow = priced(/insulated grounding bushing|ground bushing/i, tradeC);
+        cItems.push({ name: gbRow ? gbRow.desc : tradeC + '" insulated grounding bushing', qty: gbQty,
+          each: gbRow ? gbRow.price : 12, sku: gbRow ? gbRow.sku : null });
+      }
+      var pbQty = r.plasticBush == null ? (isWire ? 2 : 0) : Math.max(0, Number(r.plasticBush) || 0);
+      if (pbQty) {
+        var pbRow = priced(/plastic (?:insulator )?bushing/i, tradeC);
+        cItems.push({ name: pbRow ? pbRow.desc : tradeC + '" plastic bushing', qty: pbQty,
+          each: pbRow ? pbRow.price : 0.3, sku: pbRow ? pbRow.sku : null });
+      }
+      var sleeve = Math.max(0, Number(r.sleeveFt) || 0);
+      if (sleeve) {
+        var slTrade = bumpTrade(tradeC);
+        var slRow = priced(/PVC conduit/i, slTrade);
+        cItems.push({ name: slRow ? slRow.desc : slTrade + '" PVC conduit', qty: sleeve,
+          each: slRow ? slRow.price : 1.5, sku: slRow ? slRow.sku : null, unit: 'ft' });
+      }
+      cItems.forEach(function (i) { i.total = i.qty * i.each; });
+      consCost = cItems.reduce(function (t, i) { return t + i.total; }, 0);
+      cons = { items: cItems, trade: tradeC, spacing: spacing, cost: consCost };
+    }
+    // A line that is switched off still shows, it just stops counting.
+    if (isOff(r, 'cable')) cableCost = 0;
+    if (isOff(r, 'breaker')) brkCost = 0;
+    if (isOff(r, 'conn')) connCost = 0;
+    if (isOff(r, 'bond')) bondCost = 0;
+    if (isOff(r, 'electrode')) gndCost = 0;
+    var runParts = cableCost + brkCost + connCost + bondCost + gndCost;
+    var pctFloor = runParts * ((Number(settings.consPct) || 0) / 100);
+    var autoMisc = Math.max(20, pctFloor, consCost);
+    var basis = consCost > pctFloor && consCost > 20 ? 'items' : (pctFloor >= 20 ? 'percent' : 'floor');
+    var misc;
+    if (r.miscTouched) {
+      misc = r.miscUnit === '%' ? runParts * (Number(r.misc) || 0) / 100 : (Number(r.misc) || 0);
+      misc = Math.round(misc * 100) / 100;
+    } else {
+      misc = Math.round(autoMisc * 100) / 100;
+    }
+    var miscShown = misc;
+    if (isOff(r, 'cons')) misc = 0;
+    out.cons = cons; out.consBasis = basis; out.consPctAmount = pctFloor; out.runParts = runParts;
+    out.misc = misc; out.miscShown = miscShown;
+    // what the field shows: his own figure, or the automatic one put into whichever unit is picked
+    out.miscField = r.miscTouched ? r.misc
+      : (r.miscUnit === '%' ? (runParts > 0 ? Math.round(miscShown / runParts * 1000) / 10 : 0) : Math.round(miscShown * 100) / 100);
+
+    out.cost = runParts + misc;
+    out.gndHrs = r.gndHoursTouched ? (Number(r.gndHours) || 0) : suggestGndHours(r);
+    out.hours = Number(r.hours) || 0;
+    return out;
+  }
+
+  function computeJob() {
+    var runs = {}, matCost = 0, labourHrs = 0;
+    activeRuns().forEach(function (id) {
+      var r = R(id);
+      var res = sizeRun(r);
+      var price = priceRun(r, res);
+      runs[id] = { id: id, run: r, res: res, price: price };
+      matCost += price.cost;
+      labourHrs += price.hours + price.gndHrs;
+    });
+
+    // Equipment sits at the job level
+    var equipCost = 0, equip = null;
+    if (state.equipOn && state.equip.length) {
+      var lines = state.equip.map(function (e2) {
+        var row = rows.filter(function (x) { return x.sku === e2.sku; })[0];
+        var each = row ? row.price : (e2.price || 0);
+        return { sku: e2.sku, qty: e2.qty, row: row, desc: row ? row.desc : e2.desc || e2.sku, each: each, total: each * e2.qty, missing: !row };
+      });
+      equipCost = lines.reduce(function (t, x) { return t + x.total; }, 0);
+      equip = { lines: lines, cost: equipCost, missing: lines.some(function (x) { return x.missing; }),
+        builtin: lines.some(function (x) { return x.row && x.row.builtin; }) };
+      if (jobOff('equip')) equipCost = 0;
+      matCost += equipCost;
+    }
+
+    // One markup tier for the whole job, chosen on the material of both runs plus the gear
+    var pct = E.markupFor(matCost, settings.tiers);
+    var matPrice = matCost * (1 + pct / 100);
+
+    var km = Number(state.travelKm) || 0;
+    var beyond = Math.max(0, km - settings.freeRadiusKm);
+    var truck = beyond * 2 * settings.kmRate;
+    var travelHrs = km > settings.freeRadiusKm ? Math.round((km / 80) * 2 * 4) / 4 : Number(settings.travelHours) || 0;
+    var totalHrs = labourHrs + travelHrs;
+    var labour = totalHrs * settings.labourRate;
+    var permit = state.permit === 'res' ? settings.permitRes : (state.permit === 'com' ? settings.permitCom : 0);
+    var labourShown = labour, truckShown = truck, permitShown = permit;
+    if (jobOff('labour')) labour = 0;
+    if (jobOff('travel')) truck = 0;
+    if (jobOff('permit')) permit = 0;
+    var subtotal = matPrice + labour + truck + permit;
+    var gst = subtotal * (Number(settings.gst) || 0) / 100;
+
+    return { runs: runs, equip: equip, matCost: matCost, pct: pct, matPrice: matPrice, margin: matPrice - matCost,
+      km: km, beyondKm: beyond, truck: truck, travelHrs: travelHrs, workHrs: labourHrs, labourHrs: totalHrs,
+      labour: labour, permit: permit, subtotal: subtotal, gst: gst, total: subtotal + gst,
+      labourShown: labourShown, truckShown: truckShown, permitShown: permitShown,
+      equipCost: equipCost, equipShown: equip ? equip.cost : 0 };
+  }
+
+  /* ---------- the form for one run ---------- */
+
+  function opts(obj, sel) {
+    return Object.keys(obj).map(function (k) {
+      return '<option value="' + k + '"' + (k === sel ? ' selected' : '') + '>' + esc(obj[k].label) + '</option>';
+    }).join('');
+  }
+
+  function runFormHTML(spec) {
+    var id = spec.id, r = R(id), u = '-' + id;
+    return '' +
+    '<section class="section">' +
+      '<h2 class="section-title">' + (id === 'sub' ? 'Subpanel load' : 'Load') + ' <span class="hint">' + (id === 'sub' ? 'what the subpanel feeds' : 'what the circuit feeds') + '</span></h2>' +
+      '<div class="grid">' +
+        '<div class="field full">' +
+          '<div class="seg" data-seg="loadMode" role="group" aria-label="How the load is known">' +
+            '<button type="button" data-v="load">Load amps</button>' +
+            '<button type="button" data-v="breaker">Breaker size</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="field">' +
+          '<label for="amps' + u + '" id="ampsLabel' + u + '">Breaker rating</label>' +
+          '<div class="with-unit">' +
+            '<input id="amps' + u + '" data-f="amps" type="number" inputmode="decimal" step="0.1" min="0">' +
+            '<button class="unit-btn" data-act="ampsUnit" type="button" title="Switch between amps and watts">A</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="field">' +
+          '<label for="system' + u + '">Supply</label>' +
+          '<select id="system' + u + '" data-f="system">' + opts(E.SYSTEMS, r.system) + '</select>' +
+        '</div>' +
+        '<div class="field full toggle" data-row="continuous">' +
+          '<span class="lbl">Continuous load<span class="sub">Three hours or more: EV charger, heater, big lighting run</span></span>' +
+          '<label class="switch"><input id="continuous' + u + '" data-f="continuous" type="checkbox"><span></span></label>' +
+        '</div>' +
+      '</div>' +
+    '</section>' +
+
+    '<section class="section">' +
+      '<h2 class="section-title">' + esc(spec.title) + ' <span class="hint">' + esc(spec.hint) + '</span></h2>' +
+      '<div class="grid">' +
+        '<div class="field">' +
+          '<label for="len' + u + '">One-way length</label>' +
+          '<div class="with-unit">' +
+            '<input id="len' + u + '" data-f="len" type="number" inputmode="decimal" step="1" min="0">' +
+            '<button class="unit-btn" data-act="lenUnit" type="button" title="Switch between metres and feet">m</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="field">' +
+          '<label for="vdLimit' + u + '">Drop allowed</label>' +
+          '<select id="vdLimit' + u + '" data-f="vdLimit">' +
+            '<option value="3">3% branch or feeder</option>' +
+            '<option value="5">5% service to load</option>' +
+            '<option value="2">2% keep it tight</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="field full">' +
+          '<label for="method' + u + '">Cable or wiring method</label>' +
+          '<select id="method' + u + '" data-f="method">' + opts(E.METHODS, r.method) + '</select>' +
+        '</div>' +
+        '<div class="field full">' +
+          '<span class="lbl">Conductor</span>' +
+          '<div class="seg" data-seg="material" role="group" aria-label="Conductor material">' +
+            '<button type="button" data-v="Cu">Copper</button>' +
+            '<button type="button" data-v="Al">Aluminum</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="field" data-row="endSupply">' +
+          '<label for="endSupply' + u + '">Panel end</label>' +
+          '<select id="endSupply' + u + '" data-f="endSupply">' +
+            '<option value="dry">Dry connector</option><option value="wet">Weatherproof teck</option><option value="none">None</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="field" data-row="endLoad">' +
+          '<label for="endLoad' + u + '">Load end</label>' +
+          '<select id="endLoad' + u + '" data-f="endLoad">' +
+            '<option value="dry">Dry connector</option><option value="wet">Weatherproof teck</option><option value="none">None</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="field full"><span class="small" data-out="odNote"></span></div>' +
+      '</div>' +
+
+      '<details class="more">' +
+        '<summary>Terminations, ambient, bundling</summary>' +
+        '<div class="grid">' +
+          '<div class="field">' +
+            '<label for="termTemp' + u + '">Termination rating</label>' +
+            '<select id="termTemp' + u + '" data-f="termTemp"><option value="60">60 &deg;C</option><option value="75">75 &deg;C</option><option value="90">90 &deg;C</option></select>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="ambient' + u + '">Ambient</label>' +
+            '<div class="with-unit"><input id="ambient' + u + '" data-f="ambient" type="number" step="1"><span class="unit">&deg;C</span></div>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="conductors' + u + '">Current-carrying conductors</label>' +
+            '<input id="conductors' + u + '" data-f="conductors" type="number" step="1" min="1">' +
+            '<span class="small" data-out="condNote"></span>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="pf' + u + '">Power factor</label>' +
+            '<input id="pf' + u + '" data-f="pf" type="number" step="0.05" min="0.5" max="1">' +
+          '</div>' +
+          '<div class="field full toggle" data-row="neutral">' +
+            '<span class="lbl">Neutral carries full current<span class="sub">Line to neutral loads or harmonics: the neutral counts as a conductor (Rule 4-004 4))</span></span>' +
+            '<label class="switch"><input id="neutralCounts' + u + '" data-f="neutralCounts" type="checkbox"><span></span></label>' +
+          '</div>' +
+          '<div class="field full">' +
+            '<label for="opTemp' + u + '">Operating temperature for the drop</label>' +
+            '<select id="opTemp' + u + '" data-f="opTemp">' +
+              '<option value="60">60 &deg;C, K x 0.95</option><option value="75">75 &deg;C, Table D3 as printed</option><option value="90">90 &deg;C, K x 1.05</option>' +
+            '</select>' +
+          '</div>' +
+        '</div>' +
+      '</details>' +
+    '</section>' +
+
+    '<section class="section">' +
+      '<h2 class="section-title">Grounding and bonding <span class="hint">Rule 10-616</span></h2>' +
+      '<div class="grid">' +
+        '<div class="field full toggle">' +
+          '<span class="lbl">Pull a separate bond<span class="sub" data-out="bondSub">Sized from Table 16</span></span>' +
+          '<label class="switch"><input id="bondOn' + u + '" data-f="bondOn" type="checkbox"><span></span></label>' +
+        '</div>' +
+        '<div class="field">' +
+          '<label for="electrode' + u + '">Grounding electrode</label>' +
+          '<select id="electrode' + u + '" data-f="electrode">' +
+            '<option value="none">None, existing</option><option value="plate">Ground plate</option>' +
+            '<option value="rods">Two ground rods</option><option value="pipe">Water pipe clamp</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="field">' +
+          '<label for="gndHours' + u + '">Grounding hours</label>' +
+          '<input id="gndHours' + u + '" data-f="gndHours" type="number" inputmode="decimal" step="0.25" min="0">' +
+        '</div>' +
+      '</div>' +
+    '</section>' +
+
+    '<section class="section">' +
+      '<h2 class="section-title">Time and bits <span class="hint">' + esc(spec.label.toLowerCase()) + '</span></h2>' +
+      '<div class="grid">' +
+        '<div class="field">' +
+          '<label for="hours' + u + '">On-site hours</label>' +
+          '<input id="hours' + u + '" data-f="hours" type="number" inputmode="decimal" step="0.5" min="0">' +
+        '</div>' +
+        '<div class="field">' +
+          '<label for="misc' + u + '">Fittings and consumables</label>' +
+          '<div class="with-unit">' +
+            '<input id="misc' + u + '" data-f="misc" type="number" inputmode="decimal" step="1" min="0">' +
+            '<button class="unit-btn" data-act="miscUnit" type="button" title="Switch between dollars and a percentage">$</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<details class="more">' +
+        '<summary>Bushings, sleeve and strapping</summary>' +
+        '<div class="grid">' +
+          '<div class="field">' +
+            '<label for="strapSpacing' + u + '">Strap every</label>' +
+            '<div class="with-unit"><input id="strapSpacing' + u + '" data-f="strapSpacing" type="number" step="0.5" min="0.5"><span class="unit">m</span></div>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="groundBush' + u + '">Ground bushings</label>' +
+            '<input id="groundBush' + u + '" data-f="groundBush" type="number" step="1" min="0">' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="plasticBush' + u + '">Plastic bushings</label>' +
+            '<input id="plasticBush' + u + '" data-f="plasticBush" type="number" step="1" min="0">' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="sleeveFt' + u + '">PVC sleeve</label>' +
+            '<div class="with-unit"><input id="sleeveFt' + u + '" data-f="sleeveFt" type="number" step="5" min="0"><span class="unit">ft</span></div>' +
+          '</div>' +
+          '<div class="field full"><span class="small" data-out="consNote"></span></div>' +
+        '</div>' +
+      '</details>' +
+    '</section>' +
+
+    '<section data-out="result" aria-live="polite"></section>';
+  }
+
+  function syncRunForm(spec) {
+    var id = spec.id, r = R(id), host = $('#run' + (id === 'main' ? 'Main' : 'Sub'));
+    var busy = document.activeElement;
+    var f = function (name) { return host.querySelector('[data-f="' + name + '"]'); };
+    ['amps', 'len', 'ambient', 'conductors', 'pf', 'hours', 'strapSpacing', 'sleeveFt'].forEach(function (name) {
+      var el = f(name); if (el && el !== busy) el.value = r[name];
+    });
+    ['system', 'method', 'vdLimit', 'termTemp', 'opTemp', 'electrode', 'endSupply', 'endLoad'].forEach(function (name) {
+      var el = f(name); if (el && el !== busy) el.value = String(r[name]);
+    });
+    f('continuous').checked = !!r.continuous;
+    f('neutralCounts').checked = !!r.neutralCounts;
+    var gh = f('gndHours'); if (gh !== busy) gh.value = job && job.runs[id] ? job.runs[id].price.gndHrs : r.gndHours;
+    var mi = f('misc'); if (mi !== busy) mi.value = job && job.runs[id] ? job.runs[id].price.miscField : r.misc;
+    host.querySelector('[data-act="miscUnit"]').textContent = r.miscUnit;
+
+    var wireRun = E.METHODS[r.method].family === 'wire';
+    var gb = f('groundBush'); if (gb !== busy) gb.value = r.groundBush == null ? (wireRun ? 2 : 0) : r.groundBush;
+    var pb = f('plasticBush'); if (pb !== busy) pb.value = r.plasticBush == null ? (wireRun ? 2 : 0) : r.plasticBush;
+
+    var meth = E.METHODS[r.method];
+    f('bondOn').checked = r.bondOn == null ? (meth.bond === 'separate') : !!r.bondOn;
+
+    host.querySelectorAll('[data-seg]').forEach(function (seg) {
+      var key = seg.getAttribute('data-seg');
+      seg.querySelectorAll('button[data-v]').forEach(function (b) {
+        b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === r[key]));
+      });
+    });
+    host.querySelector('[data-row="continuous"]').hidden = r.loadMode === 'breaker';
+    host.querySelector('[data-act="ampsUnit"]').hidden = r.loadMode === 'breaker';
+    host.querySelector('[data-act="ampsUnit"]').textContent = r.ampsUnit;
+    host.querySelector('[data-act="lenUnit"]').textContent = r.lenUnit;
+    host.querySelector('#ampsLabel-' + id).textContent =
+      r.loadMode === 'breaker' ? 'Breaker rating' : (r.ampsUnit === 'W' ? 'Load, watts' : 'Load current');
+
+    var sysNow = E.SYSTEMS[r.system];
+    host.querySelector('[data-row="neutral"]').hidden = sysNow.neutral !== 'balanced' || sysNow.phase !== 3;
+    host.querySelector('[data-out="condNote"]').textContent = r.condAuto
+      ? 'From the supply' + (sysNow.cable > sysNow.cond ? ', neutral not counted (Rule 4-004 3))' : '')
+      : 'Set by hand, change the supply to go back to automatic';
+
+    var isCable = meth.family === 'cable';
+    host.querySelector('[data-row="endSupply"]').hidden = !isCable;
+    host.querySelector('[data-row="endLoad"]').hidden = !isCable;
+    host.querySelector('[data-out="odNote"]').textContent = isCable
+      ? 'Connector size follows the cable diameter. Pick weatherproof for an end that sits outside or in a wet spot.'
+      : 'Conduit run: those fittings sit in the consumables line, not here.';
+
+    var pr = job && job.runs[id] ? job.runs[id].price : null;
+    host.querySelector('[data-out="bondSub"]').textContent = pr && pr.bond
+      ? (pr.bond.wanted ? 'Table 16 at ' + Math.round(pr.bond.enterAmps) + ' A: ' + pr.bond.label + (pr.bond.onAmpacity ? ', off the conductor ampacity' : '') : pr.bond.why)
+      : 'Sized from Table 16';
+    host.querySelector('[data-out="consNote"]').textContent = pr && pr.cons
+      ? 'Consumables price at ' + settings.consPct + '% of the parts (' + money(pr.consPctAmount) +
+        ' here), which sits above what these bits count to (' + money(pr.cons.cost) +
+        '). The counts only move the price when they add up to more, such as a long sleeve.'
+      : '';
+  }
+
+  /* ---------- result card ---------- */
+
+  function renderResult(spec) {
+    var id = spec.id, host = $('#run' + (id === 'main' ? 'Main' : 'Sub')).querySelector('[data-out="result"]');
+    var J = job.runs[id]; if (!J) { host.innerHTML = ''; return; }
+    var r = J.res, rec = r.recommended, sys = r.system, run = J.run;
+    if (!rec) {
+      host.innerHTML = '<div class="result"><div class="head"><div><div class="kicker">No size fits</div>' +
+        '<div class="desc">Nothing in ' + esc(r.method.label) + ' carries this load inside ' + r.vdLimit + '% over ' +
+        fmtLen(run, r.lengthM) + '. Shorten the run, raise the voltage, or run it in parallel.</div></div></div></div>';
+      return;
+    }
+    var cableDesc = r.method.family === 'cable'
+      ? sys.cable + ' conductor ' + r.method.label.split(' (')[0].split(',')[0]
+      : r.method.label;
+    var chips = [];
+    chips.push('<span class="pill ok"><b>' + rec.breaker + ' A</b> breaker</span>');
+    chips.push('<span class="pill"><b>' + rec.corrected + ' A</b> ampacity at ' + r.column + '&deg;C</span>');
+    if (rec.maxLen != null) chips.push('<span class="pill"><b>' + fmtLen(run, rec.maxLen) + '</b> max at this size</span>');
+    chips.push('<span class="pill">K ' + rec.K + ' &middot; f ' + r.f + ' &middot; I ' + r.iVD + ' A</span>');
+    if (r.governed === 'voltage drop') chips.push('<span class="pill warn">Upsized for drop</span>');
+
+    var idx = E.SIZES.indexOf(rec.size);
+    var from = Math.max(0, idx - 2), to = Math.min(E.SIZES.length - 1, idx + 3), body = '';
+    r.rows.forEach(function (row) {
+      var ri = E.SIZES.indexOf(row.size);
+      if (ri < from || ri > to) return;
+      body += '<tr class="' + (row.size === rec.size ? 'rec' : '') + '">' +
+        '<td><span class="st ' + (row.ok ? 'ok' : 'bad') + '"></span>' + esc(row.label) + '</td>' +
+        '<td class="num">' + row.corrected + ' A</td><td class="num">' + row.ocpMax + ' A</td>' +
+        '<td class="num">' + row.vdPct.toFixed(2) + '%</td>' +
+        '<td class="num">' + (row.maxLen != null ? fmtLen(run, row.maxLen) : '-') + '</td></tr>';
+    });
+
+    host.innerHTML =
+      '<div class="result' + (id === 'sub' ? ' is-sub' : '') + '">' +
+        '<div class="head">' +
+          '<div><div class="kicker">' + (id === 'sub' ? 'Subpanel feeder' : 'Use') + '</div>' +
+            '<div class="big">' + esc(rec.label) + '<small>' + (r.material === 'Al' ? 'aluminum' : 'copper') + '</small></div>' +
+            '<div class="desc">' + esc(cableDesc) + ' &middot; ' + esc(sys.label) + '</div></div>' +
+          '<div class="vd ' + (rec.vdPct <= r.vdLimit ? 'ok' : 'bad') + '"><div class="n">' + rec.vdPct.toFixed(2) + '%</div>' +
+            '<div class="l">' + rec.vd.toFixed(1) + ' V drop over ' + fmtLen(run, r.lengthM) + '</div></div>' +
+        '</div>' +
+        '<div class="chips">' + chips.join('') + '</div>' +
+        (r.notes.length ? '<div class="notes">' + r.notes.map(function (n) { return '<div>' + esc(n) + '</div>'; }).join('') + '</div>' : '') +
+        '<div class="tbl-wrap"><table class="sizes"><thead><tr>' +
+          '<th>Size</th><th class="num">Ampacity</th><th class="num">Max breaker</th><th class="num">Drop</th><th class="num">Max run</th>' +
+          '</tr></thead><tbody>' + body + '</tbody></table></div>' +
+        '<div class="tbl-foot">Ampacity is Table ' + (r.material === 'Al' ? '4' : '2') + ' at the ' + r.column + '&nbsp;&deg;C column' +
+          (r.fAmb < 1 || r.fBun < 1 ? ', corrected' : '') + '. Drop is Table D3 at ' + r.iVD + ' A.</div>' +
+      '</div>';
+  }
+
+  /* ---------- the priced lines ---------- */
+
+  function tag(src) {
+    var cls = src === 'sheet' ? 'sheet' : (src === 'manual' ? 'manual' : 'est');
+    var txt = src === 'sheet' ? 'Price sheet'
+      : (src === 'manual' ? 'Your price' : (src === 'builtin' ? 'Typical price' : 'Estimated'));
+    return '<span class="tag ' + cls + '">' + txt + '</span>';
+  }
+
+  function line(o) {
+    var off = !!o.off;
+    return '<div class="line' + (off ? ' is-off' : '') + '">' +
+      '<div class="t">' + esc(o.title) + (o.tag || '') + (off ? '<span class="tag off">Off</span>' : '') + '</div>' +
+      '<div class="s">' + esc(o.sub) + '</div>' +
+      '<div class="v">' + o.value + '</div>' +
+      (o.key ? '<button class="rm" type="button" data-off="' + o.key + '" title="' + (off ? 'Put it back' : 'Take it off the price') +
+        '" aria-label="' + (off ? 'Put ' + esc(o.title) + ' back on the price' : 'Take ' + esc(o.title) + ' off the price') + '">' +
+        (off ? '&#43;' : '&times;') + '</button>' : '') +
+      (o.ctl && !off ? '<div class="ctl">' + o.ctl + '</div>' : '') +
+      '</div>';
+  }
+
+  function runLinesHTML(J) {
+    var id = J.id, p = J.price, r = J.run, res = J.res, rec = res.recommended, out = '';
+    if (!rec) return line({ title: 'Nothing sized', sub: 'No conductor fits this run', value: '-' });
+
+    var u = '-' + id;
+    if (p.cable) {
+      var c = p.cable;
+      var qty = c.strands > 1
+        ? c.strands + ' x ' + c.buy.buy + ' m of ' + E.sizeLabel(c.size) + ' single conductors, no bond counted'
+        : c.buy.buy + ' m of ' + c.cond + 'C ' + E.sizeLabel(c.size);
+      var ctl = '';
+      if (c.matches.length > 1) {
+        ctl += '<select id="cablePick' + u + '" data-pick="cable" aria-label="Which price-sheet row to use">' +
+          c.matches.map(function (m) {
+            return '<option value="' + esc(m.sku) + '"' + (c.pick && m.sku === c.pick.sku ? ' selected' : '') + '>' +
+              esc(m.sku + ' | ' + m.desc.slice(0, 52) + ' | ' + money(m.perM) + '/m') + '</option>';
+          }).join('') + '</select>';
+      }
+      ctl += '<div class="with-unit rate"><input id="cableRate' + u + '" data-rate="cable" type="number" step="0.01" min="0" ' +
+        'value="' + (c.perM != null ? Math.round(c.perM * 100) / 100 : '') + '" aria-label="Cable price per metre"><span class="unit">$/m</span></div>';
+      out += line({ title: 'Cable', key: 'cable', off: isOff(r, 'cable'), tag: tag(c.src),
+        value: c.perM != null ? money(isOff(r, 'cable') ? 0 : c.cost) : 'no price',
+        sub: qty + ' (' + c.buy.raw + ' m with ' + settings.waste + '% waste, ' + c.buy.rule + ')' +
+          (c.perM != null ? ' at ' + money(c.perM) + '/m' : '') + (c.note ? ' | ' + c.note : ''), ctl: ctl });
+    }
+    if (p.breaker) {
+      var b = p.breaker;
+      var bctl = '';
+      if (b.matches.length > 1) {
+        bctl += '<select id="brkPick' + u + '" data-pick="brk" aria-label="Which breaker to price">' +
+          b.matches.map(function (m) {
+            return '<option value="' + esc(m.sku) + '"' + (b.pick && m.sku === b.pick.sku ? ' selected' : '') + '>' +
+              esc(m.sku + ' | ' + m.desc.slice(0, 52) + ' | ' + money(m.price)) + '</option>';
+          }).join('') + '</select>';
+      }
+      bctl += '<div class="with-unit rate"><input id="brkRate' + u + '" data-rate="brk" type="number" step="0.01" min="0" ' +
+        'value="' + (b.price != null ? Math.round(b.price * 100) / 100 : '') + '" aria-label="Breaker price each"><span class="unit">$ ea</span></div>';
+      out += line({ title: 'Breaker', key: 'breaker', off: isOff(r, 'breaker'), tag: tag(b.src),
+        value: b.price != null ? money(isOff(r, 'breaker') ? 0 : b.cost) : 'no price',
+        sub: b.poles + '-pole ' + b.amps + ' A' + (b.note ? ' | ' + b.note : ''), ctl: bctl });
+    }
+    if (p.conn) {
+      var parts = p.conn.ends.map(function (x) {
+        if (x.kind === 'none') return x.name + ': none';
+        if (!x.row) return x.name + ': nothing stocked for this size';
+        return x.name + ': ' + x.row.desc + ' at ' + money(x.row.price) + (x.fit === 'nearest' ? ' | nearest stocked, check the range against the reel' : '');
+      });
+      var cctl = p.conn.ends.filter(function (x) { return x.kind !== 'none' && x.options.length > 1; }).map(function (x) {
+        return '<select data-end="' + x.key + '" aria-label="' + esc(x.name) + ' connector">' + x.options.map(function (o) {
+          return '<option value="' + esc(o.sku) + '"' + (x.row && o.sku === x.row.sku ? ' selected' : '') + '>' +
+            esc(x.name + ': ' + o.desc.slice(0, 44) + ' ' + money(o.price)) + '</option>';
+        }).join('') + '</select>';
+      }).join('');
+      out += line({ title: 'Connectors', key: 'conn', off: isOff(r, 'conn'), tag: tag(p.conn.src),
+        value: money(isOff(r, 'conn') ? 0 : p.conn.cost),
+        sub: 'Cable about ' + (p.conn.od != null ? p.conn.od.toFixed(2) + '" across, ' : '') + p.conn.trade + '" fittings. ' + parts.join('. '),
+        ctl: cctl });
+    }
+    if (p.bond && p.bond.wanted) {
+      out += line({ title: 'Bonding conductor', key: 'bond', off: isOff(r, 'bond'), tag: tag(p.bond.src),
+        value: p.bond.perM != null ? money(isOff(r, 'bond') ? 0 : p.bond.cost) : 'no price',
+        sub: p.bond.buy.buy + ' m of ' + p.bond.label + ' copper' + (p.bond.perM != null ? ' at ' + money(p.bond.perM) + '/m' : '') +
+          (p.bond.note ? ' | ' + p.bond.note : '') });
+    }
+    if (p.electrode) {
+      out += line({ title: 'Grounding electrode', key: 'electrode', off: isOff(r, 'electrode'), tag: tag(p.electrode.src),
+        value: money(isOff(r, 'electrode') ? 0 : p.electrode.cost),
+        sub: p.electrode.items.map(function (i) { return (i.unit === 'm' ? i.qty + ' m ' : i.qty + ' x ') + i.name + ' at ' + money(i.each); }).join(', ') });
+    }
+    var itemText = p.cons ? p.cons.items.map(function (i) {
+      return (i.unit === 'ft' ? i.qty + ' ft ' : (i.qty > 1 ? i.qty + ' x ' : '')) + i.name;
+    }).join(', ') : '';
+    out += line({ title: 'Fittings and consumables', key: 'cons', off: isOff(r, 'cons'),
+      tag: tag(r.miscTouched ? 'manual' : 'estimated'), value: money(p.misc),
+      sub: r.miscTouched
+        ? (r.miscUnit === '%'
+            ? 'Your figure: ' + r.misc + '% of ' + money(p.runParts) + ' of parts. Clear the field to go back to automatic'
+            : 'Your figure, a flat amount. Clear the field to go back to automatic')
+        : (p.consBasis === 'items' ? 'Counted: ' + itemText + ', which comes to more than the ' + settings.consPct + '% allowance'
+          : settings.consPct + '% of the cable, breaker, connectors and grounding' + (itemText ? '. Covers ' + itemText + ', marrettes, tape and screws' : '')) });
+    return out;
+  }
+
+  function renderEstimate() {
+    var host = $('#estLines');
+    var focus = document.activeElement && document.activeElement.id ? document.activeElement.id : null;
+    var caret = null;
+    if (focus && document.activeElement.setSelectionRange && document.activeElement.type !== 'number') {
+      try { caret = document.activeElement.selectionStart; } catch (e) { }
+    }
+
+    $('#priceAsOf').textContent = (prices.fetched ? 'Sheet prices, ' + ago(prices.fetched) : 'Built-in prices') +
+      (prices.updated ? ', sheet of ' + prices.updated : '');
+
+    var html = '';
+    var ids = activeRuns();
+    ids.forEach(function (id) {
+      var J = job.runs[id];
+      if (ids.length > 1) {
+        var rec = J.res.recommended;
+        html += '<div class="grp" data-run="' + id + '"><span>' + (id === 'sub' ? 'Subpanel feeder' : 'Main feed') + '</span>' +
+          '<span class="n">' + (rec ? esc(rec.label) + ' | ' + money(J.price.cost) : 'nothing sized') + '</span></div>';
+      }
+      html += '<div class="runlines" data-run="' + id + '">' + runLinesHTML(J) + '</div>';
+    });
+
+    if (job.equip) {
+      html += line({ title: 'Equipment', key: 'equip', off: jobOff('equip'),
+        tag: tag(job.equip.missing ? 'estimated' : (job.equip.builtin ? 'builtin' : 'sheet')),
+        value: money(jobOff('equip') ? 0 : job.equip.cost),
+        sub: job.equip.lines.map(function (x) { return x.qty + ' x ' + x.desc + ' at ' + money(x.each); }).join('. ') });
+    }
+
+    var labourSub = ids.map(function (id) {
+      var p = job.runs[id].price;
+      return (ids.length > 1 ? (id === 'sub' ? 'subpanel ' : 'main feed ') : '') + hrs(p.hours + p.gndHrs);
+    }).join(' plus ') + (job.travelHrs ? ' plus ' + hrs(job.travelHrs) + ' travel' : '') +
+      ' at ' + money0(settings.labourRate) + '/hr, solo journeyman';
+    html += line({ title: 'Labour', key: 'labour', off: jobOff('labour'), sub: labourSub, value: money(job.labour) });
+
+    if (job.truckShown > 0) {
+      html += line({ title: 'Travel', key: 'travel', off: jobOff('travel'), value: money(job.truck),
+        sub: job.beyondKm + ' km past the ' + settings.freeRadiusKm + ' km free radius, both ways at ' + money(settings.kmRate) + '/km' });
+    }
+    if (job.permitShown > 0) {
+      html += line({ title: 'Permit', key: 'permit', off: jobOff('permit'), value: money(job.permit),
+        sub: (state.permit === 'res' ? 'Residential' : 'Commercial') + ' permit, Superior Safety Codes, passed through' });
+    }
+    host.innerHTML = html;
+    renderTotals();
+
+    if (focus) {
+      var back = document.getElementById(focus);
+      if (back && back !== document.activeElement) {
+        back.focus();
+        if (caret != null && back.setSelectionRange) { try { back.setSelectionRange(caret, caret); } catch (e) { } }
+      }
+    }
+  }
+
+  function renderTotals() {
+    var ids = activeRuns();
+    $('#internalBox').hidden = !settings.showInternal;
+    $('#intCost').textContent = money(job.matCost);
+    $('#intMarkupLbl').textContent = 'Markup at ' + job.pct + '%' + (ids.length > 1 ? ' on both runs together' : '');
+    $('#intMarkup').textContent = money(job.margin);
+    $('#intMargin').textContent = money(job.matPrice);
+
+    $('#totMaterial').textContent = money(job.matPrice);
+    $('#totLabour').textContent = money(job.labour + job.truck);
+    $('#totPermitRow').hidden = !(job.permit > 0);
+    var offCount = 0;
+    activeRuns().forEach(function (id2) { offCount += Object.keys(R(id2).off || {}).filter(function (k) { return R(id2).off[k]; }).length; });
+    offCount += Object.keys(state.off).filter(function (k) { return state.off[k]; }).length;
+    var oc = $('#offCount');
+    if (oc) { oc.hidden = offCount === 0; oc.textContent = offCount + (offCount === 1 ? ' line off the price' : ' lines off the price'); }
+    $('#totPermit').textContent = money(job.permit);
+    $('#gstLbl').textContent = 'GST ' + settings.gst + '%';
+    $('#totGst').textContent = money(job.gst);
+    $('#totTotal').textContent = money0(job.total);
+    // the per-run subtotal in each group header
+    document.querySelectorAll('#estLines .grp').forEach(function (g) {
+      var J = job.runs[g.getAttribute('data-run')];
+      if (!J) return;
+      var rec = J.res.recommended;
+      g.querySelector('.n').textContent = rec ? rec.label + ' | ' + money(J.price.cost) : 'nothing sized';
+    });
+  }
+
+  function renderEquip() {
+    var panel = $('#equipPanel');
+    panel.hidden = !state.equipOn;
+    $('#equipOn').checked = !!state.equipOn;
+    if (!state.equipOn) return;
+    var hits = P.searchRows(rows, { text: state.equipQ, category: state.equipCat, limit: 30 });
+    $('#equipHits').innerHTML = hits.length ? hits.map(function (x) {
+      return '<button class="hit' + (x.builtin ? ' builtin' : '') + '" type="button" data-sku="' + esc(x.sku) + '">' +
+        '<span class="d">' + esc(x.desc) + '</span><span class="p">' + money(x.price) + '</span>' +
+        '<span class="add" aria-hidden="true">+</span>' +
+        '<span class="m">' + (x.builtin ? 'Typical price, not off your sheet'
+          : esc(x.sku + (x.supplier ? ' | ' + x.supplier : '') + (x.bought ? ' | ' + x.bought : ''))) + '</span></button>';
+    }).join('') : '<div class="none">Nothing matches that. The built-in list carries the common panels, ' +
+      'breakers and disconnects; sync the price sheet to search everything you actually buy.</div>';
+    $('#equipPicked').innerHTML = state.equip.map(function (x, i) {
+      var row = rows.filter(function (y) { return y.sku === x.sku; })[0];
+      var each = row ? row.price : (x.price || 0);
+      return '<div class="pick"><span class="d">' + esc(row ? row.desc : x.desc || x.sku) + '</span>' +
+        '<input type="number" min="1" step="1" value="' + x.qty + '" data-i="' + i + '" aria-label="How many">' +
+        '<span class="p">' + money(each * x.qty) + '</span>' +
+        '<button class="x" type="button" data-rm="' + i + '" aria-label="Take it off">&times;</button>' +
+        '<span class="m">' + esc(x.sku) + ' at ' + money(each) +
+        (row ? (row.builtin ? ' | typical price' : '') : ' | not on the sheet now') + '</span></div>';
+    }).join('');
+  }
+
+  function renderStatus() {
+    var el = $('#status'), txt = el.querySelector('.txt');
+    var d = daysSince(prices.fetched), st = feedState, s;
+    if (st === 'syncing') s = 'Checking the price sheet';
+    else if (st === 'live') s = 'Price sheet synced ' + ago(prices.fetched);
+    else if (st === 'nofeed') s = 'Built-in prices | tap to connect the sheet';
+    else if (st === 'error') s = 'Offline, using prices from ' + (prices.fetched ? ago(prices.fetched) : 'the built-in list') + (feedMsg ? ' (' + feedMsg + ')' : '');
+    else s = 'Prices from ' + ago(prices.fetched) + ' | tap to refresh';
+    if (st === 'live' && d != null && d > 7) { st = 'stale'; s = 'Price sheet is ' + Math.round(d) + ' days old'; }
+    el.setAttribute('data-state', st);
+    txt.textContent = s;
+  }
+
+  function render() {
+    job = computeJob();
+    $('#runSub').hidden = !state.subOn;
+    $('#subOn').checked = !!state.subOn;
+    activeRuns().forEach(function (id) {
+      var spec = RUNS.filter(function (s) { return s.id === id; })[0];
+      syncRunForm(spec);
+      renderResult(spec);
+    });
+    if (document.activeElement !== $('#rate')) $('#rate').value = settings.labourRate;
+    if (document.activeElement !== $('#travelKm')) $('#travelKm').value = state.travelKm;
+    if (document.activeElement !== $('#permit')) $('#permit').value = state.permit;
+    renderEstimate();
+    renderEquip();
+    renderStatus();
+    saveState();
+  }
+
+  /* ---------- price feed ---------- */
+
+  function applyFeed(data) { prices = data; rows = allRows(prices); P.saveCache(prices); }
+
+  function sync(manual) {
+    if (!settings.feedUrl) { feedState = 'nofeed'; renderStatus(); if (manual) openSettings(); return; }
+    if (!navigator.onLine) { feedState = 'error'; feedMsg = 'no signal'; renderStatus(); return; }
+    feedState = 'syncing'; renderStatus();
+    P.fetchFeed(settings.feedUrl, settings.feedKey, 4000).then(function (res) {
+      if (res.ok) {
+        applyFeed(res.data); feedState = 'live'; feedMsg = ''; render();
+        if (manual) toast('Price sheet updated');
+      } else {
+        feedState = 'error'; feedMsg = res.error; renderStatus();
+        if (manual) toast(res.error);
+      }
+    });
+  }
+
+  /* ---------- copy ---------- */
+
+  function scopeLine(J) {
+    var r = J.res, run = J.run;
+    return r.system.label.replace(/,.*$/, '') + ', ' +
+      (r.loadMode === 'breaker' ? r.amps + ' A circuit' : Math.round(r.amps * 10) / 10 + ' A load') +
+      ', ' + fmtLen(run, r.lengthM) + ' run';
+  }
+
+  function customerText() {
+    var L = [], ids = activeRuns();
+    L.push('PRO ELECTRICAL SERVICES | ball park price');
+    ids.forEach(function (id) {
+      var J = job.runs[id], rec = J.res.recommended, p = J.price;
+      L.push((ids.length > 1 ? (id === 'sub' ? 'SUBPANEL FEEDER: ' : 'MAIN FEED: ') : '') + scopeLine(J));
+      if (rec) {
+        L.push('  Cable: ' + rec.label + ' ' + (J.res.material === 'Al' ? 'aluminum' : 'copper') + ' ' + J.res.method.label.split(',')[0] +
+          ', ' + (p.cable.strands > 1 ? p.cable.strands + ' x ' + p.cable.buy.buy + ' m' : p.cable.buy.buy + ' m') +
+          ', on a ' + rec.breaker + ' A breaker');
+        L.push('  Voltage drop: ' + rec.vdPct.toFixed(1) + '% at ' + fmtLen(J.run, J.res.lengthM) + ', inside the ' + J.res.vdLimit + '% the Code allows');
+      }
+      if (p.conn && !isOff(J.run, 'conn') && p.conn.ends.some(function (x) { return x.kind === 'wet'; })) L.push('  Weatherproof teck gland where the cable lands outside');
+      if (p.electrode && !isOff(J.run, 'electrode')) L.push('  Grounding: ' + (J.run.electrode === 'plate' ? 'new ground plate' : J.run.electrode === 'rods' ? 'two ground rods' : 'a water pipe bond') + ' with the conductor to it');
+    });
+    if (job.equip && !jobOff('equip')) L.push('Equipment: ' + job.equip.lines.map(function (x) { return (x.qty > 1 ? x.qty + ' x ' : '') + x.desc; }).join(', '));
+    L.push('');
+    var pairs = [['Materials', job.matPrice], ['Labour and travel', job.labour + job.truck]];
+    if (job.permit > 0) pairs.push(['Permit', job.permit]);
+    pairs.push(['Subtotal', job.subtotal], ['GST ' + settings.gst + '%', job.gst], ['TOTAL', job.total]);
+    var wl = 0, wr = 0;
+    pairs.forEach(function (p2) { wl = Math.max(wl, p2[0].length); wr = Math.max(wr, money(p2[1]).length); });
+    pairs.forEach(function (p2) {
+      var v = money(p2[1]);
+      L.push(p2[0] + new Array(wl - p2[0].length + 4).join(' ') + new Array(wr - v.length + 1).join(' ') + v);
+    });
+    L.push('');
+    L.push('Provisional. Firm once the run is measured and the panel is looked at.');
+    L.push('PRO Electrical Services | 780-625-5880 | admin@proes.ca');
+    return L.join('\n');
+  }
+
+  function internalText() {
+    var L = [], ids = activeRuns();
+    L.push('FEED CALCULATOR | internal');
+    ids.forEach(function (id) {
+      var J = job.runs[id], p = J.price, r = J.res, rec = r.recommended;
+      L.push('');
+      L.push((id === 'sub' ? '== SUBPANEL FEEDER ==' : '== MAIN FEED ==') + ' ' + scopeLine(J) + ' | ' + r.method.label + ' | ' + (r.material === 'Al' ? 'Al' : 'Cu'));
+      if (!rec) { L.push('  Nothing fits this run.'); return; }
+      L.push('  SIZE: ' + rec.label + '  breaker ' + rec.breaker + ' A  ampacity ' + rec.corrected + ' A at ' + r.column + ' C  | ' + r.nCond + ' current-carrying conductors');
+      L.push('  DROP: ' + rec.vd.toFixed(1) + ' V = ' + rec.vdPct.toFixed(2) + '% (limit ' + r.vdLimit + '%). K ' + rec.K + ', f ' + r.f + ', I ' + r.iVD + ' A, L ' + Math.round(r.lengthM) + ' m');
+      L.push('  Governed by ' + (r.governed === 'both' ? 'ampacity and drop' : r.governed) + '. Max run at this size ' + (rec.maxLen != null ? rec.maxLen + ' m' : 'n/a'));
+      if (r.notes.length) L.push('  Notes: ' + r.notes.join(' '));
+      var offMark = function (key) { return isOff(J.run, key) ? '  ** OFF THE PRICE **' : ''; };
+      L.push('  Cable  ' + (p.cable.strands > 1 ? p.cable.strands + ' x ' : '') + p.cable.buy.buy + ' m x ' +
+        (p.cable.perM != null ? money(p.cable.perM) : '?') + ' = ' + money(p.cable.cost) + '  [' + p.cable.src + '] ' + p.cable.note + offMark('cable'));
+      if (p.breaker) L.push('  Breaker ' + p.breaker.poles + 'P ' + p.breaker.amps + ' A = ' + money(p.breaker.cost) + '  [' + p.breaker.src + '] ' + p.breaker.note + offMark('breaker'));
+      if (p.conn) L.push('  Connectors ' + p.conn.ends.map(function (x) {
+        return x.name + ' ' + (x.kind === 'none' ? 'none' : (x.row ? x.row.sku + ' ' + money(x.row.price) + (x.fit === 'nearest' ? ' (nearest)' : '') : 'nothing stocked'));
+      }).join(', ') + ' = ' + money(p.conn.cost) + '  [cable about ' + (p.conn.od != null ? p.conn.od.toFixed(2) + '"' : 'unknown') + ']' + offMark('conn'));
+      if (p.bond && p.bond.wanted) L.push('  Bond   ' + p.bond.buy.buy + ' m ' + p.bond.label + ' Cu = ' + money(p.bond.cost) +
+        '  [' + p.bond.src + '] Table 16 at ' + Math.round(p.bond.enterAmps) + ' A' + (p.bond.onAmpacity ? ' (ampacity, 10-616 3b)' : '') + offMark('bond'));
+      else if (p.bond) L.push('  Bond   none: ' + p.bond.why);
+      if (p.electrode) L.push('  Electrode ' + p.electrode.items.map(function (i) { return i.qty + (i.unit === 'm' ? ' m ' : ' x ') + i.name; }).join(', ') + ' = ' + money(p.electrode.cost) + offMark('electrode'));
+      L.push('  Consumables = ' + money(p.misc) + '  [' + (J.run.miscTouched ? 'entered by hand'
+        : (p.consBasis === 'items' ? 'counted, above the ' + settings.consPct + '% allowance'
+          : settings.consPct + '% of ' + money(p.runParts) + ', covers ' + money(p.cons ? p.cons.cost : 0) + ' of counted bits')) + ']' + offMark('cons'));
+      L.push('  Run material ' + money(p.cost) + ', ' + hrs(p.hours + p.gndHrs));
+    });
+    L.push('');
+    if (job.equip) L.push('EQUIPMENT ' + job.equip.lines.map(function (x) { return x.qty + ' x ' + x.sku; }).join(', ') + ' = ' + money(job.equip.cost) + (jobOff('equip') ? '  ** OFF THE PRICE **' : ''));
+    L.push('MATERIAL ' + money(job.matCost) + ' + ' + job.pct + '% markup' + (ids.length > 1 ? ' (one tier on both runs together)' : '') + ' = ' + money(job.matPrice) + ' (margin ' + money(job.margin) + ')');
+    L.push('LABOUR ' + job.labourHrs + ' hrs x ' + money0(settings.labourRate) + ' = ' + money(job.labourShown) + (jobOff('labour') ? '  ** OFF THE PRICE **' : '') +
+      (job.truckShown ? ' | truck ' + money(job.truckShown) + (jobOff('travel') ? ' ** OFF **' : '') : ''));
+    if (job.permitShown > 0) L.push('PERMIT ' + money(job.permitShown) + (jobOff('permit') ? '  ** OFF THE PRICE **' : ''));
+    L.push('SUBTOTAL ' + money(job.subtotal) + ' + GST ' + money(job.gst) + ' = TOTAL ' + money(job.total));
+    L.push('');
+    L.push('Prices: ' + (prices.fetched ? 'sheet synced ' + ago(prices.fetched) : 'built-in list in the app') +
+      (prices.updated ? ', sheet last updated ' + prices.updated : '') + '.');
+    L.push('CEC C22.1:24 Rules 8-102, 8-104, 4-004, 4-006, 14-104, 10-616, Table D3.');
+    return L.join('\n');
+  }
+
+  function copy(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast('Copied'); }, function () { fallbackCopy(text); });
+    } else fallbackCopy(text);
+  }
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); toast('Copied'); } catch (e) { toast('Could not copy'); }
+    document.body.removeChild(ta);
+  }
+
+  /* ---------- settings ---------- */
+
+  function openSettings() {
+    $('#setFeedUrl').value = settings.feedUrl || '';
+    $('#setFeedKey').value = settings.feedKey || '';
+    $('#t1').value = settings.tiers[0].pct; $('#t2').value = settings.tiers[1].pct;
+    $('#t3').value = settings.tiers[2].pct; $('#t4').value = settings.tiers[3].pct;
+    $('#setRate').value = settings.labourRate; $('#setTravelHrs').value = settings.travelHours;
+    $('#setFreeKm').value = settings.freeRadiusKm; $('#setKmRate').value = settings.kmRate;
+    $('#setPermitRes').value = settings.permitRes; $('#setPermitCom').value = settings.permitCom;
+    $('#setWaste').value = settings.waste; $('#setGst').value = settings.gst; $('#setConsPct').value = settings.consPct;
+    $('#setRound').checked = !!settings.round; $('#setInternal').checked = !!settings.showInternal;
+    $('#feedTest').textContent = ''; $('#feedTest').className = 'feed-test';
+    $('#cacheInfo').textContent = rows.length + ' rows in the app right now, ' +
+      (prices.fetched ? 'last synced ' + ago(prices.fetched) : 'built-in list only') +
+      (prices.updated ? ', sheet updated ' + prices.updated : '') + '.';
+    var d = $('#settingsDlg');
+    if (typeof d.showModal === 'function') d.showModal(); else d.setAttribute('open', '');
+  }
+
+  function saveSettingsFromForm() {
+    settings.feedUrl = $('#setFeedUrl').value.trim();
+    settings.feedKey = $('#setFeedKey').value.trim();
+    settings.tiers = [
+      { upTo: 1000, pct: Number($('#t1').value) || 0 }, { upTo: 5000, pct: Number($('#t2').value) || 0 },
+      { upTo: 10000, pct: Number($('#t3').value) || 0 }, { upTo: null, pct: Number($('#t4').value) || 0 }
+    ];
+    settings.labourRate = Number($('#setRate').value) || 0;
+    settings.travelHours = Number($('#setTravelHrs').value) || 0;
+    settings.freeRadiusKm = Number($('#setFreeKm').value) || 0;
+    settings.kmRate = Number($('#setKmRate').value) || 0;
+    settings.permitRes = Number($('#setPermitRes').value) || 0;
+    settings.permitCom = Number($('#setPermitCom').value) || 0;
+    settings.waste = Number($('#setWaste').value) || 0;
+    settings.consPct = Number($('#setConsPct').value) || 0;
+    settings.gst = Number($('#setGst').value) || 0;
+    settings.round = $('#setRound').checked;
+    settings.showInternal = $('#setInternal').checked;
+    save(SETTINGS_KEY, settings);
+    render();
+    sync(false);
+  }
+
+  function applyTheme(t) {
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    else document.documentElement.removeAttribute('data-theme');
+  }
+  function cycleTheme() {
+    var cur = null;
+    try { cur = localStorage.getItem(THEME_KEY); } catch (e) { }
+    var next = cur === 'dark' ? 'light' : (cur === 'light' ? 'auto' : 'dark');
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) { }
+    applyTheme(next);
+    toast(next === 'auto' ? 'Follows the phone' : (next === 'dark' ? 'Dark' : 'Light'));
+  }
+
+  /* ---------- events ---------- */
+
+  var NUMERIC = { amps: 1, len: 1, ambient: 1, conductors: 1, pf: 1, hours: 1, gndHours: 1, strapSpacing: 1,
+    groundBush: 1, plasticBush: 1, sleeveFt: 1, misc: 1, vdLimit: 1, termTemp: 1, opTemp: 1 };
+
+  function wireRun(spec) {
+    var id = spec.id, host = $('#run' + (id === 'main' ? 'Main' : 'Sub'));
+    host.innerHTML = runFormHTML(spec);
+
+    function onField(ev) {
+      var el = ev.target.closest('[data-f]');
+      if (!el) return;
+      var r = R(id), f = el.getAttribute('data-f');
+      if (el.type === 'checkbox') {
+        r[f] = el.checked;
+        if (f === 'neutralCounts') { r.condAuto = true; r.conductors = E.conductorCount(r.system, r.neutralCounts); }
+      } else if (NUMERIC[f]) {
+        if (f === 'groundBush' || f === 'plasticBush') r[f] = el.value === '' ? null : Number(el.value);
+        else if (f === 'misc') { r.misc = Number(el.value) || 0; r.miscTouched = el.value !== ''; }
+        else if (f === 'gndHours') { r.gndHours = Number(el.value) || 0; r.gndHoursTouched = el.value !== ''; }
+        else if (f === 'conductors') { r.conductors = Number(el.value) || 1; r.condAuto = false; }
+        else r[f] = el.value === '' ? '' : Number(el.value);
+      } else {
+        r[f] = el.value;
+        if (f === 'system') { r.condAuto = true; r.conductors = E.conductorCount(r.system, r.neutralCounts); }
+        if (f === 'method') { r.bondOn = null; r.cableSku = ''; r.cableRate = null; }
+        if (f === 'endSupply') r.endSupplySku = '';
+        if (f === 'endLoad') r.endLoadSku = '';
+      }
+      render();
+    }
+    host.addEventListener('input', onField);
+    host.addEventListener('change', onField);
+
+    host.addEventListener('click', function (ev) {
+      var r = R(id);
+      var segBtn = ev.target.closest('.seg button[data-v]');
+      if (segBtn) {
+        var key = segBtn.closest('[data-seg]').getAttribute('data-seg');
+        r[key] = segBtn.getAttribute('data-v');
+        render();
+        return;
+      }
+      var act = ev.target.closest('[data-act]');
+      if (!act) return;
+      var sys = E.SYSTEMS[r.system];
+      if (act.getAttribute('data-act') === 'ampsUnit') {
+        r.ampsUnit = r.ampsUnit === 'A' ? 'W' : 'A';
+        r.amps = r.ampsUnit === 'W'
+          ? Math.round(Number(r.amps) * sys.V * (sys.phase === 3 ? 1.732 : 1) * Number(r.pf))
+          : Math.round(E.ampsFromWatts(Number(r.amps), sys.V, sys.phase, r.pf) * 10) / 10;
+      } else if (act.getAttribute('data-act') === 'miscUnit') {
+        var parts = job && job.runs[id] ? job.runs[id].price.runParts : 0;
+        var cur = Number(r.miscTouched ? r.misc : (job && job.runs[id] ? job.runs[id].price.miscField : 0)) || 0;
+        if (r.miscUnit === '$') {
+          r.miscUnit = '%';
+          if (r.miscTouched) r.misc = parts > 0 ? Math.round(cur / parts * 1000) / 10 : 0;
+        } else {
+          r.miscUnit = '$';
+          if (r.miscTouched) r.misc = Math.round(parts * cur / 100 * 100) / 100;
+        }
+      } else if (act.getAttribute('data-act') === 'lenUnit') {
+        r.lenUnit = r.lenUnit === 'm' ? 'ft' : 'm';
+        r.len = r.lenUnit === 'ft' ? Math.round(Number(r.len) / 0.3048) : Math.round(Number(r.len) * 0.3048 * 10) / 10;
+      }
+      render();
+    });
+  }
+
+  function init() {
+    try { applyTheme(localStorage.getItem(THEME_KEY) || 'auto'); } catch (e) { }
+
+    RUNS.forEach(wireRun);
+
+    // the priced lines carry their own controls
+    $('#estLines').addEventListener('click', function (ev) {
+      var btn = ev.target.closest('button[data-off]');
+      if (!btn) return;
+      var key = btn.getAttribute('data-off');
+      var block = btn.closest('.runlines');
+      if (block) {
+        var r2 = R(block.getAttribute('data-run'));
+        r2.off[key] = !r2.off[key];
+      } else {
+        state.off[key] = !state.off[key];
+      }
+      render();
+    });
+    $('#estLines').addEventListener('change', function (ev) {
+      var block = ev.target.closest('.runlines');
+      if (!block) return;
+      var r = R(block.getAttribute('data-run'));
+      var pick = ev.target.closest('[data-pick]');
+      if (pick) {
+        if (pick.getAttribute('data-pick') === 'cable') { r.cableSku = pick.value; r.cableRate = null; }
+        else { r.brkKey = pick.value; r.brkRate = null; }
+        render(); return;
+      }
+      var end = ev.target.closest('select[data-end]');
+      if (end) {
+        if (end.getAttribute('data-end') === 'supply') r.endSupplySku = end.value;
+        else r.endLoadSku = end.value;
+        render();
+      }
+    });
+    $('#estLines').addEventListener('input', function (ev) {
+      var block = ev.target.closest('.runlines');
+      if (!block) return;
+      var r = R(block.getAttribute('data-run'));
+      var rate = ev.target.closest('[data-rate]');
+      if (!rate) return;
+      if (rate.getAttribute('data-rate') === 'cable') r.cableRate = rate.value === '' ? null : Number(rate.value);
+      else r.brkRate = rate.value === '' ? null : Number(rate.value);
+      // Rebuilding the lines under the cursor would eat the keystrokes, so only the numbers move.
+      job = computeJob();
+      renderTotals();
+      saveState();
+    });
+    $('#estLines').addEventListener('focusout', function (ev) {
+      if (ev.target.closest('[data-rate]')) setTimeout(render, 0);
+    });
+
+    $('#subOn').addEventListener('change', function () {
+      state.subOn = this.checked;
+      render();
+      if (this.checked) $('#runSub').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    $('#rate').addEventListener('input', function () {
+      settings.labourRate = this.value === '' ? 0 : Number(this.value);
+      save(SETTINGS_KEY, settings); render();
+    });
+    $('#travelKm').addEventListener('input', function () { state.travelKm = Number(this.value) || 0; render(); });
+    $('#permit').addEventListener('change', function () { state.permit = this.value; render(); });
+
+    $('#equipCat').innerHTML = P.CATEGORIES.map(function (c) {
+      return '<option value="' + c.id + '"' + (c.id === state.equipCat ? ' selected' : '') + '>' + esc(c.label) + '</option>';
+    }).join('');
+    $('#equipOn').addEventListener('change', function () { state.equipOn = this.checked; render(); });
+    $('#equipCat').addEventListener('change', function () { state.equipCat = this.value; renderEquip(); saveState(); });
+    $('#equipQ').addEventListener('input', function () { state.equipQ = this.value; renderEquip(); });
+    $('#equipHits').addEventListener('click', function (ev) {
+      var b = ev.target.closest('.hit[data-sku]');
+      if (!b) return;
+      var sku = b.getAttribute('data-sku');
+      var found = state.equip.filter(function (x) { return x.sku === sku; })[0];
+      if (found) found.qty += 1;
+      else {
+        var row = rows.filter(function (x) { return x.sku === sku; })[0];
+        state.equip.push({ sku: sku, qty: 1, desc: row ? row.desc : sku, price: row ? row.price : 0 });
+      }
+      render(); toast('Added');
+    });
+    $('#equipPicked').addEventListener('input', function (ev) {
+      var inp = ev.target.closest('input[data-i]');
+      if (!inp) return;
+      state.equip[Number(inp.getAttribute('data-i'))].qty = Math.max(1, Number(inp.value) || 1);
+      job = computeJob(); renderEstimate(); saveState();
+    });
+    $('#equipPicked').addEventListener('click', function (ev) {
+      var b = ev.target.closest('button[data-rm]');
+      if (!b) return;
+      state.equip.splice(Number(b.getAttribute('data-rm')), 1);
+      render();
+    });
+
+    $('#copyCust').addEventListener('click', function () { copy(customerText()); });
+    $('#copyInt').addEventListener('click', function () { copy(internalText()); });
+    $('#status').addEventListener('click', function () { sync(true); });
+    $('#settingsBtn').addEventListener('click', openSettings);
+    $('#themeBtn').addEventListener('click', cycleTheme);
+    $('#testFeed').addEventListener('click', function () {
+      var el = $('#feedTest');
+      el.className = 'feed-test'; el.textContent = 'Trying...';
+      P.fetchFeed($('#setFeedUrl').value.trim(), $('#setFeedKey').value.trim(), 8000).then(function (r2) {
+        if (r2.ok) { el.className = 'feed-test ok'; el.textContent = r2.data.rows.length + ' rows came back.'; }
+        else { el.className = 'feed-test bad'; el.textContent = r2.error; }
+      });
+    });
+    $('#settingsDlg').addEventListener('close', function () {
+      if ($('#settingsDlg').returnValue === 'save') saveSettingsFromForm();
+    });
+
+    window.addEventListener('online', function () { sync(false); });
+    window.addEventListener('offline', function () { feedState = 'error'; feedMsg = 'no signal'; renderStatus(); });
+
+    render();
+    sync(false);
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function () { });
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+</body>
+</html>
