@@ -617,6 +617,85 @@ dialog .field input, dialog .field select { font-size: 15px; }
     return { size: size, label: sizeLabel(size), enteredAt: row.amps };
   }
 
+  /* ------------------------------------------------------------------
+   * Typical terminal conductor ranges.
+   *
+   * These are PRODUCT markings, not Code numbers. A lug accepts only the sizes stamped on it or on
+   * the label inside the enclosure, and Rule 2-024 is what makes that marking binding. The ranges
+   * below are the common ones for the load centre, splitter and safety switch lines Paul buys,
+   * typed in from manufacturer literature rather than read off a certified drawing, so anything
+   * decided from them is flagged as typical and tells him to check the label.
+   * ------------------------------------------------------------------ */
+  const LUGS = {
+    breaker: [
+      { upTo: 30, min: '14', max: '8' }, { upTo: 60, min: '10', max: '4' },
+      { upTo: 100, min: '8', max: '1/0' }, { upTo: 125, min: '4', max: '2/0' },
+      { upTo: 225, min: '4', max: '300' }
+    ],
+    panel: [
+      { upTo: 60, min: '10', max: '2' }, { upTo: 100, min: '8', max: '1/0' },
+      { upTo: 125, min: '4', max: '2/0' }, { upTo: 200, min: '6', max: '250' },
+      { upTo: 400, min: '3/0', max: '500' }
+    ],
+    disconnect: [
+      { upTo: 30, min: '14', max: '8' }, { upTo: 60, min: '14', max: '2' },
+      { upTo: 100, min: '8', max: '1/0' }, { upTo: 200, min: '6', max: '250' },
+      { upTo: 400, min: '3/0', max: '500' }
+    ],
+    splitter: [
+      { upTo: 100, min: '14', max: '2/0' }, { upTo: 200, min: '14', max: '250' },
+      { upTo: 400, min: '6', max: '500' }
+    ]
+  };
+
+  const LUG_KINDS = [
+    { key: 'breaker', label: 'Breaker in a panel' },
+    { key: 'panel', label: 'Panel main lug or main breaker' },
+    { key: 'disconnect', label: 'Disconnect or safety switch' },
+    { key: 'splitter', label: 'Splitter or trough' },
+    { key: 'none', label: 'Nothing to land on yet' }
+  ];
+
+  function lugRange(kind, amps) {
+    const list = LUGS[kind] || LUGS.breaker;
+    for (let i = 0; i < list.length; i++) if (amps <= list[i].upTo + 1e-9) return list[i];
+    return list[list.length - 1];
+  }
+
+  /** Does this conductor land on that terminal?  'fits' | 'big' | 'small' */
+  function lugFit(kind, amps, size) {
+    if (!kind || kind === 'none' || !size) return 'fits';
+    const r = lugRange(kind, amps);
+    if (sizeIndex(size) > sizeIndex(r.max)) return 'big';
+    if (sizeIndex(size) < sizeIndex(r.min)) return 'small';
+    return 'fits';
+  }
+
+  /** Smallest conductor whose table ampacity reaches amps. */
+  function sizeForAmps(material, amps, column) {
+    for (let i = 0; i < SIZES.length; i++) {
+      const a = tableAmpacity(material, SIZES[i], column);
+      if (a != null && a >= amps - 1e-9) return SIZES[i];
+    }
+    return SIZES[SIZES.length - 1];
+  }
+
+  /**
+   * The transition conductor for an oversized feeder.
+   * Sized at or above the overcurrent device rating so Rule 14-100 1) a) covers it: the breaker
+   * already protects it, so no tap rule and no length cap is engaged. Rule 4-006 5) puts a floor
+   * of 1.2 m on the piece that lands on the equipment.
+   */
+  function pigtailSize(material, amps, column, kind) {
+    let size = sizeForAmps(material, amps, column);
+    const r = lugRange(kind === 'none' ? 'breaker' : kind, amps);
+    if (sizeIndex(size) < sizeIndex(r.min)) size = r.min;
+    return { size: size, label: sizeLabel(size), min: r.min, max: r.max, fits: sizeIndex(size) <= sizeIndex(r.max) };
+  }
+
+  const PIGTAIL_MIN_M = 1.2;   // Rule 4-006 5)
+  const PIGTAIL_CUT_M = 1.5;   // what you actually cut, to dress it in
+
   /**
    * Current-carrying conductors for Table 5C, from the supply. Rule 4-004 3) and 4):
    * a neutral carrying only unbalanced current is not counted; a common conductor carrying
@@ -851,7 +930,8 @@ dialog .field input, dialog .field select { font-size: 15px; }
     return phase === 3 ? watts / (1.732 * V * p) : watts / (V * p);
   }
 
-  return { SIZES, TABLE2, TABLE4, TABLE16, OD3, cableOD, dryTrade, tradeForOD, bondSize, conductorCount, R_CU, R_AL, X_PVC, X_STEEL, STD_OCP, OCP_CAP, METHODS, SYSTEMS,
+  return { SIZES, TABLE2, TABLE4, TABLE16, OD3, LUGS, LUG_KINDS, lugRange, lugFit, sizeForAmps, pigtailSize,
+    PIGTAIL_MIN_M, PIGTAIL_CUT_M, cableOD, dryTrade, tradeForOD, bondSize, conductorCount, R_CU, R_AL, X_PVC, X_STEEL, STD_OCP, OCP_CAP, METHODS, SYSTEMS,
     size, sizeLabel, sizeIndex, sizeCompare, ambientFactor, bundleFactor, tableAmpacity, maxOCP, nextStandardOCP, kFactor,
     purchaseLength, markupFor, ampsFromWatts, round };
 });
@@ -982,7 +1062,8 @@ dialog .field input, dialog .field select { font-size: 15px; }
   const CAT_FAM = [
     ['ABB/GE THQL', 'THQL', 1.00],
     ['Square D QO', 'QO', 1.15],
-    ['Eaton BR', 'BR', 0.95]
+    ['Eaton BR', 'BR', 0.95],
+    ['Siemens QP', 'QP', 1.05]
   ];
 
   function catalogueBreakers() {
@@ -1018,7 +1099,12 @@ dialog .field input, dialog .field select { font-size: 15px; }
     [200, 40, 'MB', 'indoor', 'Eaton BR', 320], [200, 40, 'MB', '3R outdoor', 'Eaton BR', 470],
     [200, 40, 'MB', 'indoor', 'ABB/GE', 330], [200, 42, 'MB', '3R outdoor', 'ABB/GE', 495],
     [200, 40, 'MB', '3R outdoor combination meter socket', 'Eaton BR', 890],
-    [100, 24, 'MB', '3R outdoor combination meter socket', 'Eaton BR', 690]
+    [100, 24, 'MB', '3R outdoor combination meter socket', 'Eaton BR', 690],
+    [100, 12, 'ML', 'indoor', 'Siemens', 110], [100, 12, 'ML', '3R outdoor', 'Siemens', 180],
+    [100, 24, 'MB', 'indoor', 'Siemens', 195], [100, 24, 'MB', '3R outdoor', 'Siemens', 310],
+    [125, 24, 'MB', 'indoor', 'Siemens', 250],
+    [200, 40, 'MB', 'indoor', 'Siemens', 315], [200, 40, 'MB', '3R outdoor', 'Siemens', 465],
+    [200, 40, 'MB', '3R outdoor combination meter socket', 'Siemens', 860]
   ];
 
   function cataloguePanels() {
@@ -1039,8 +1125,18 @@ dialog .field input, dialog .field select { font-size: 15px; }
     ['CAT-D04', 'Fusible disconnect 60A 2P 240V, 3R outdoor', 320],
     ['CAT-D05', 'Fusible disconnect 30A 2P 240V, 3R outdoor', 165],
     ['CAT-D06', 'Non-fusible disconnect 30A 2P 240V, indoor Type 1', 62],
+    ['CAT-D07', 'Siemens non-fusible disconnect 100A 2P 240V, 3R outdoor', 205],
+    ['CAT-D08', 'Siemens non-fusible disconnect 60A 2P 240V, 3R outdoor', 140],
     ['CAT-S01', '100A splitter box, 3R outdoor', 240],
-    ['CAT-S02', '200A splitter box, 3R outdoor', 410]
+    ['CAT-S02', '200A splitter box, 3R outdoor', 410],
+    ['CAT-S03', '100A splitter box, indoor Type 1', 165],
+    ['CAT-S04', '200A splitter box, indoor Type 1', 290],
+    ['CAT-S05', '400A splitter box, 3R outdoor', 720],
+    ['CAT-T01', 'Insulated multi-tap connector 2-port, #14 to 2/0 AL9CU', 28.00],
+    ['CAT-T02', 'Insulated multi-tap connector 2-port, #6 to 350 kcmil AL9CU', 52.00],
+    ['CAT-T03', 'Insulated multi-tap connector 2-port, 1/0 to 500 kcmil AL9CU', 78.00],
+    ['CAT-T04', 'Reducing pin terminal, compression, #4 to 4/0 AL9CU', 16.00],
+    ['CAT-T05', 'Oxide-inhibiting joint compound, 4 oz', 14.00]
   ].map(function (m) {
     return { sku: m[0], desc: m[1], unit: 'ea', price: m[2], supplier: '', bought: '', builtin: true };
   });
@@ -1177,6 +1273,8 @@ dialog .field input, dialog .field select { font-size: 15px; }
     const u = d.toUpperCase();
     if (!/CONNECTOR/.test(u)) return null;
     if (/LOCKNUT|BUSHING|COUPLING|GIGAMAX|\bRJ|CAT\s*[56]|SPEAKER|LUG\b/.test(u)) return null;
+    // splice and tap hardware is not a cable gland
+    if (/MULTI\s*-?TAP|POLARIS|PIN TERMINAL|REDUCING|SPLICE|MECHANICAL TAP|INSULATED TAP/.test(u)) return null;
     // conduit fittings are not cable connectors
     if (/EMT|RIGID|LIQUID\s*-?TIGHT|LIQUIDTIGHT|\bFLEX\b|SET\s*-?SCREW|COMPRESSION/.test(u)) return null;
 
@@ -1455,7 +1553,7 @@ dialog .field input, dialog .field select { font-size: 15px; }
 
   var RUN_FIELDS = ['system', 'loadMode', 'amps', 'ampsUnit', 'continuous', 'method', 'material', 'len', 'lenUnit',
     'vdLimit', 'termTemp', 'ambient', 'conductors', 'condAuto', 'neutralCounts', 'pf', 'opTemp',
-    'endSupply', 'endLoad', 'endSupplySku', 'endLoadSku', 'bondOn', 'electrode', 'gndHours', 'gndHoursTouched',
+    'endSupply', 'endLoad', 'endSupplySku', 'endLoadSku', 'devSupply', 'devLoad', 'bondOn', 'electrode', 'gndHours', 'gndHoursTouched',
     'strapSpacing', 'groundBush', 'plasticBush', 'sleeveFt', 'cableSku', 'cableRate', 'brkKey', 'brkRate',
     'misc', 'miscTouched', 'hours'];
 
@@ -1465,11 +1563,12 @@ dialog .field input, dialog .field select { font-size: 15px; }
       method: 'ACWU90', material: 'Al', len: 30, lenUnit: 'm', vdLimit: 3,
       termTemp: 75, ambient: 30, conductors: 2, condAuto: true, neutralCounts: false, pf: 1, opTemp: 75,
       endSupply: 'dry', endLoad: 'dry', endSupplySku: '', endLoadSku: '',
+      devSupply: 'breaker', devLoad: 'panel',
       bondOn: null, electrode: 'none', gndHours: 0, gndHoursTouched: false,
       strapSpacing: 1.5, groundBush: null, plasticBush: null, sleeveFt: 0,
       cableSku: '', cableRate: null, brkKey: '', brkRate: null,
       misc: 0, miscUnit: '$', miscTouched: false, hours: 6,
-      off: {}   // lines taken off this run's price: cable, breaker, conn, bond, electrode, cons
+      off: {}   // lines taken off this run's price: cable, breaker, conn, trans, bond, electrode, cons
     };
     for (var k in (o || {})) r[k] = o[k];
     return r;
@@ -1725,6 +1824,120 @@ dialog .field input, dialog .field select { font-size: 15px; }
       out.conn = conn;
     }
 
+    /* Terminal fit, and the splitter transition when the feeder outgrows the lug.
+       Rule 2-024: equipment is used as it is marked, so a lug takes only the sizes stamped on it.
+       Rule 14-100 1) a): the pigtail is at or above the breaker rating, so the breaker already
+       protects it. No tap rule, no length cap.
+       Rule 4-006 5): the piece landing on the equipment is at least 1.2 m. We cut 1.5 m. */
+    var transCost = 0, trans = null, transHrs = 0;
+    if (rec) {
+      var ocp = rec.breaker;
+      var lugEnds = [
+        { key: 'supply', name: 'Panel end', kind: r.devSupply || 'breaker', wet: r.endSupply === 'wet' },
+        { key: 'load', name: 'Load end', kind: r.devLoad || 'panel', wet: r.endLoad === 'wet' }
+      ];
+      lugEnds.forEach(function (e3) {
+        e3.range = E.lugRange(e3.kind === 'none' ? 'breaker' : e3.kind, ocp);
+        e3.fit = E.lugFit(e3.kind, ocp, rec.size);
+      });
+      var tooBig = lugEnds.filter(function (x) { return x.fit === 'big'; });
+      var tooSmall = lugEnds.filter(function (x) { return x.fit === 'small'; });
+
+      if (tooBig.length || tooSmall.length) {
+        var tItems = [], missing = false, anyBuiltin = false;
+        var strandsT = sys.cable;
+        var pig = E.pigtailSize(res.material, ocp, res.column, (tooBig[0] || lugEnds[0]).kind);
+        var take = function (row, qty, unit) {
+          if (!row) { missing = true; return; }
+          if (row.builtin) anyBuiltin = true;
+          tItems.push({ name: row.desc, qty: qty, each: row.price, total: row.price * qty, sku: row.sku, unit: unit || '' });
+        };
+        var biggestIn = function (txt) {
+          var best = null, m, re = /(\d{3,4})\s*kcmil|(\d{1,2}\/0)\b|#\s*(\d{1,2})\b/gi;
+          while ((m = re.exec(txt))) {
+            var v = m[1] || m[2] || m[3];
+            if (E.sizeIndex(v) < 0) continue;
+            if (best == null || E.sizeIndex(v) > E.sizeIndex(best)) best = v;
+          }
+          return best;
+        };
+
+        tooBig.forEach(function (e3) {
+          // Splitter sized to the run, outdoor rated when that end is outside (Rule 12-2000)
+          var sp = P.findByText(rows, /splitter/i).filter(function (x) { return x.price != null; })
+            .map(function (x) {
+              var am = /(\d{2,4})\s*A\b/i.exec(x.desc);
+              return { row: x, amps: am ? Number(am[1]) : 0, outdoor: /3R|outdoor|weather/i.test(x.desc) };
+            })
+            .filter(function (x) { return !x.amps || x.amps >= ocp; });
+          sp.sort(function (a, b) {
+            var d = (a.outdoor === e3.wet ? 0 : 1) - (b.outdoor === e3.wet ? 0 : 1);
+            if (d) return d;
+            if (a.amps !== b.amps) return a.amps - b.amps;
+            return a.row.price - b.row.price;
+          });
+          take(sp[0] ? sp[0].row : null, 1);
+
+          // One insulated multi-tap per insulated conductor, big enough for the feeder size
+          var tp = P.findByText(rows, /multi-?tap|polaris/i).filter(function (x) { return x.price != null; })
+            .map(function (x) { return { row: x, cap: biggestIn(x.desc) }; })
+            .filter(function (x) { return !x.cap || E.sizeIndex(x.cap) >= E.sizeIndex(rec.size); });
+          tp.sort(function (a, b) {
+            var ai = a.cap ? E.sizeIndex(a.cap) : 99, bi = b.cap ? E.sizeIndex(b.cap) : 99;
+            return ai - bi || a.row.price - b.row.price;
+          });
+          take(tp[0] ? tp[0].row : null, strandsT);
+          transHrs += 1.25;
+        });
+
+        if (tooBig.length) {
+          // Pigtails: 1.5 m cut per conductor per end, single conductor in the run's own material
+          var pigM = E.PIGTAIL_CUT_M * strandsT * tooBig.length;
+          var pigRow = P.findCable(rows, { method: 'RW90_PVC', material: res.material, size: pig.size, cond: null })[0];
+          var pigPerM = null, pigDesc = '';
+          if (pigRow) { pigPerM = pigRow.perM; pigDesc = pigRow.desc; }
+          else {
+            var pg = estimatePerM({ method: 'RW90_PVC', material: res.material, size: pig.size, cond: null }, r);
+            if (!pg) {
+              // No single conductor of that material on the sheet. Fall back to the run's own cable
+              // family at the pigtail size and split it across its conductors.
+              var pc = estimatePerM({ method: r.method, material: res.material, size: pig.size, cond: sys.cable }, r);
+              if (pc) pg = { perM: pc.perM / Math.max(1, sys.cable), from: pc.from };
+            }
+            if (pg) {
+              pigPerM = pg.perM;
+              pigDesc = pig.label + ' ' + (res.material === 'Al' ? 'aluminum' : 'copper') + ' single conductor, scaled from ' + pg.from.desc;
+              anyBuiltin = true;
+            } else missing = true;
+          }
+          if (pigPerM != null) {
+            tItems.push({ name: pigDesc || (pig.label + ' pigtail'), qty: pigM, each: pigPerM, total: pigPerM * pigM,
+              sku: pigRow ? pigRow.sku : null, unit: 'm' });
+          }
+          if (res.material === 'Al') {
+            var cmp = P.findByText(rows, /oxide|joint compound|no-?ox|penetrox/i).filter(function (x) { return x.price != null; })[0];
+            if (cmp) take(cmp, 1);
+          }
+        }
+
+        tooSmall.forEach(function (e3) {
+          var rp = P.findByText(rows, /pin terminal|reducer|reducing/i).filter(function (x) { return x.price != null; })[0];
+          take(rp, strandsT);
+          transHrs += 0.35;
+        });
+
+        transCost = tItems.reduce(function (t, i) { return t + i.total; }, 0);
+        trans = {
+          items: tItems, ends: lugEnds, tooBig: tooBig, tooSmall: tooSmall, pigtail: pig,
+          conductors: strandsT, cutM: E.PIGTAIL_CUT_M, minM: E.PIGTAIL_MIN_M, ocp: ocp, cost: transCost,
+          src: missing ? 'estimated' : (anyBuiltin ? 'builtin' : 'sheet'), hours: transHrs
+        };
+        out.trans = trans;
+      } else {
+        out.trans = { items: [], ends: lugEnds, tooBig: [], tooSmall: [], cost: 0, hours: 0, src: 'sheet' };
+      }
+    }
+
     // Bonding, Rule 10-616
     var bondCost = 0, bond = null;
     if (rec) {
@@ -1829,9 +2042,10 @@ dialog .field input, dialog .field select { font-size: 15px; }
     if (isOff(r, 'cable')) cableCost = 0;
     if (isOff(r, 'breaker')) brkCost = 0;
     if (isOff(r, 'conn')) connCost = 0;
+    if (isOff(r, 'trans')) { transCost = 0; transHrs = 0; }
     if (isOff(r, 'bond')) bondCost = 0;
     if (isOff(r, 'electrode')) gndCost = 0;
-    var runParts = cableCost + brkCost + connCost + bondCost + gndCost;
+    var runParts = cableCost + brkCost + connCost + transCost + bondCost + gndCost;
     var pctFloor = runParts * ((Number(settings.consPct) || 0) / 100);
     var autoMisc = Math.max(20, pctFloor, consCost);
     var basis = consCost > pctFloor && consCost > 20 ? 'items' : (pctFloor >= 20 ? 'percent' : 'floor');
@@ -1852,6 +2066,7 @@ dialog .field input, dialog .field select { font-size: 15px; }
 
     out.cost = runParts + misc;
     out.gndHrs = r.gndHoursTouched ? (Number(r.gndHours) || 0) : suggestGndHours(r);
+    out.transHrs = transHrs;
     out.hours = Number(r.hours) || 0;
     return out;
   }
@@ -1864,7 +2079,7 @@ dialog .field input, dialog .field select { font-size: 15px; }
       var price = priceRun(r, res);
       runs[id] = { id: id, run: r, res: res, price: price };
       matCost += price.cost;
-      labourHrs += price.hours + price.gndHrs;
+      labourHrs += price.hours + price.gndHrs + (price.transHrs || 0);
     });
 
     // Equipment sits at the job level
@@ -1986,6 +2201,18 @@ dialog .field input, dialog .field select { font-size: 15px; }
             '<option value="dry">Dry connector</option><option value="wet">Weatherproof teck</option><option value="none">None</option>' +
           '</select>' +
         '</div>' +
+        '<div class="field" data-row="devSupply">' +
+          '<label for="devSupply' + u + '">Lands on, panel end</label>' +
+          '<select id="devSupply' + u + '" data-f="devSupply">' +
+            '<option value="breaker">Breaker in a panel</option><option value="panel">Panel main lug</option><option value="disconnect">Disconnect</option><option value="splitter">Splitter or trough</option><option value="none">Not decided</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="field" data-row="devLoad">' +
+          '<label for="devLoad' + u + '">Lands on, load end</label>' +
+          '<select id="devLoad' + u + '" data-f="devLoad">' +
+            '<option value="breaker">Breaker in a panel</option><option value="panel">Panel main lug</option><option value="disconnect">Disconnect</option><option value="splitter">Splitter or trough</option><option value="none">Not decided</option>' +
+          '</select>' +
+        '</div>' +
         '<div class="field full"><span class="small" data-out="odNote"></span></div>' +
       '</div>' +
 
@@ -2093,7 +2320,7 @@ dialog .field input, dialog .field select { font-size: 15px; }
     ['amps', 'len', 'ambient', 'conductors', 'pf', 'hours', 'strapSpacing', 'sleeveFt'].forEach(function (name) {
       var el = f(name); if (el && el !== busy) el.value = r[name];
     });
-    ['system', 'method', 'vdLimit', 'termTemp', 'opTemp', 'electrode', 'endSupply', 'endLoad'].forEach(function (name) {
+    ['system', 'method', 'vdLimit', 'termTemp', 'opTemp', 'electrode', 'endSupply', 'endLoad', 'devSupply', 'devLoad'].forEach(function (name) {
       var el = f(name); if (el && el !== busy) el.value = String(r[name]);
     });
     f('continuous').checked = !!r.continuous;
@@ -2132,7 +2359,7 @@ dialog .field input, dialog .field select { font-size: 15px; }
     host.querySelector('[data-row="endSupply"]').hidden = !isCable;
     host.querySelector('[data-row="endLoad"]').hidden = !isCable;
     host.querySelector('[data-out="odNote"]').textContent = isCable
-      ? 'Connector size follows the cable diameter. Pick weatherproof for an end that sits outside or in a wet spot.'
+      ? 'Connector size follows the cable diameter. Pick weatherproof for an end that sits outside or in a wet spot. What it lands on decides whether the conductor still fits the lug.'
       : 'Conduit run: those fittings sit in the consumables line, not here.';
 
     var pr = job && job.runs[id] ? job.runs[id].price : null;
@@ -2278,6 +2505,52 @@ dialog .field input, dialog .field select { font-size: 15px; }
         value: money(isOff(r, 'conn') ? 0 : p.conn.cost),
         sub: 'Cable about ' + (p.conn.od != null ? p.conn.od.toFixed(2) + '" across, ' : '') + p.conn.trade + '" fittings. ' + parts.join('. '),
         ctl: cctl });
+    }
+    if (p.trans && (p.trans.tooBig.length || p.trans.tooSmall.length)) {
+      var t = p.trans;
+      var endWord = function (list) {
+        if (list.length === 2) return 'Both ends';
+        return list[0].name;
+      };
+      var lugWord = function (k) {
+        return k === 'breaker' ? 'breaker lug' : k === 'panel' ? 'main lug' : k === 'disconnect' ? 'disconnect lug' : 'terminal';
+      };
+      var why = [];
+      if (t.tooBig.length) {
+        var rg = t.tooBig[0].range;
+        var same = t.tooBig.every(function (x) { return x.range.max === rg.max && x.range.min === rg.min; });
+        var oneKind = t.tooBig.every(function (x) { return x.kind === t.tooBig[0].kind; });
+        why.push(endWord(t.tooBig) + ': ' + rec.label + ' will not land on ' +
+          (same ? 'a ' + E.sizeLabel(rg.min) + ' to ' + E.sizeLabel(rg.max) + ' ' + (oneKind ? lugWord(t.tooBig[0].kind) : 'lug')
+                : t.tooBig.map(function (x) { return 'the ' + lugWord(x.kind) + ' (' + E.sizeLabel(x.range.min) + ' to ' + E.sizeLabel(x.range.max) + ')'; }).join(' or ')) + '.');
+      }
+      if (t.tooSmall.length) {
+        why.push(endWord(t.tooSmall) + ': ' + rec.label + ' is under the ' + E.sizeLabel(t.tooSmall[0].range.min) + ' that lug starts at.');
+      }
+      // short names, because this gets read at a customer's door
+      var shortName = function (d) {
+        if (/multi-?tap|polaris/i.test(d)) return 'multi-tap connector';
+        if (/pin terminal|reducer|reducing/i.test(d)) return 'reducing pin';
+        if (/oxide|compound|no-?ox|penetrox/i.test(d)) return 'joint compound';
+        if (/splitter/i.test(d)) return String(d).split(',')[0] + (/3R|outdoor|weather/i.test(d) ? ' (3R)' : ' (indoor)');
+        return String(d).split(',')[0];
+      };
+      var roll = {};
+      t.items.forEach(function (i) {
+        if (i.unit === 'm') return;
+        var k = shortName(i.name);
+        roll[k] = (roll[k] || 0) + i.qty;
+      });
+      var what = Object.keys(roll).map(function (k) { return (roll[k] > 1 ? roll[k] + ' x ' : '') + k; });
+      var pigItem = t.items.filter(function (i) { return i.unit === 'm'; })[0];
+      if (pigItem) {
+        what.push((Math.round(pigItem.qty * 10) / 10) + ' m of ' + t.pigtail.label + ' pigtail at ' + t.cutM + ' m a leg, Code floor ' + t.minM + ' m');
+      } else if (t.tooBig.length) {
+        what.push(t.pigtail.label + ' pigtail, no price on the sheet');
+      }
+      out += line({ title: 'Splitter and transition', key: 'trans', off: isOff(r, 'trans'), tag: tag(t.src),
+        value: money(isOff(r, 'trans') ? 0 : t.cost),
+        sub: why.join(' ') + ' ' + what.join(', ') + '.' + (t.hours ? ' Adds about ' + t.hours + ' h.' : '') });
     }
     if (p.bond && p.bond.wanted) {
       out += line({ title: 'Bonding conductor', key: 'bond', off: isOff(r, 'bond'), tag: tag(p.bond.src),
@@ -2488,6 +2761,7 @@ dialog .field input, dialog .field select { font-size: 15px; }
         L.push('  Voltage drop: ' + rec.vdPct.toFixed(1) + '% at ' + fmtLen(J.run, J.res.lengthM) + ', inside the ' + J.res.vdLimit + '% the Code allows');
       }
       if (p.conn && !isOff(J.run, 'conn') && p.conn.ends.some(function (x) { return x.kind === 'wet'; })) L.push('  Weatherproof teck gland where the cable lands outside');
+      if (p.trans && !isOff(J.run, 'trans') && p.trans.tooBig.length) L.push('  Splitter box at ' + (p.trans.tooBig.length > 1 ? 'both ends' : p.trans.tooBig[0].name.toLowerCase()) + ': the cable is too large to land directly on the ' + (p.trans.tooBig[0].kind === 'breaker' ? 'breaker' : 'lugs') + ', so it joins there and a short length carries into it');
       if (p.electrode && !isOff(J.run, 'electrode')) L.push('  Grounding: ' + (J.run.electrode === 'plate' ? 'new ground plate' : J.run.electrode === 'rods' ? 'two ground rods' : 'a water pipe bond') + ' with the conductor to it');
     });
     if (job.equip && !jobOff('equip')) L.push('Equipment: ' + job.equip.lines.map(function (x) { return (x.qty > 1 ? x.qty + ' x ' : '') + x.desc; }).join(', '));
@@ -2526,6 +2800,15 @@ dialog .field input, dialog .field select { font-size: 15px; }
       if (p.conn) L.push('  Connectors ' + p.conn.ends.map(function (x) {
         return x.name + ' ' + (x.kind === 'none' ? 'none' : (x.row ? x.row.sku + ' ' + money(x.row.price) + (x.fit === 'nearest' ? ' (nearest)' : '') : 'nothing stocked'));
       }).join(', ') + ' = ' + money(p.conn.cost) + '  [cable about ' + (p.conn.od != null ? p.conn.od.toFixed(2) + '"' : 'unknown') + ']' + offMark('conn'));
+      if (p.trans && (p.trans.tooBig.length || p.trans.tooSmall.length)) {
+        L.push('  Terminal fit: ' + p.trans.ends.map(function (x) {
+          return x.name + ' ' + x.kind + ' ' + x.range.min + '-' + x.range.max + ' = ' + x.fit;
+        }).join(', '));
+        L.push('  Transition ' + money(p.trans.cost) + ' [' + p.trans.items.map(function (i) {
+          return (i.unit === 'm' ? (Math.round(i.qty * 10) / 10) + ' m ' : i.qty + ' x ') + (i.sku || i.name.slice(0, 28));
+        }).join(', ') + ']' + (p.trans.hours ? ' + ' + p.trans.hours + ' h' : '') + offMark('trans'));
+        if (p.trans.tooBig.length) L.push('    Pigtail ' + p.trans.pigtail.label + ' at ' + p.trans.cutM + ' m per conductor. Rule 4-006 5) floor 1.2 m, Rule 14-100 1) a) so no tap rule, Rule 12-2000 splitter, Rule 12-118 AL9CU and compound.');
+      }
       if (p.bond && p.bond.wanted) L.push('  Bond   ' + p.bond.buy.buy + ' m ' + p.bond.label + ' Cu = ' + money(p.bond.cost) +
         '  [' + p.bond.src + '] Table 16 at ' + Math.round(p.bond.enterAmps) + ' A' + (p.bond.onAmpacity ? ' (ampacity, 10-616 3b)' : '') + offMark('bond'));
       else if (p.bond) L.push('  Bond   none: ' + p.bond.why);
