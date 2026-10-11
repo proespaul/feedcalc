@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Receipts</title>
+<meta name="description" content="Snap a receipt. Every line item lands in the household spending sheet.">
+<meta name="theme-color" content="#1f6f4a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Receipts">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{
+  --bg:#f6f4ef; --card:#ffffff; --ink:#1b1f1d; --muted:#6b716d; --line:#e6e2d8;
+  --accent:#1f6f4a; --accent-ink:#ffffff; --accent-soft:#e3f1e9;
+  --warn:#9a5b0a; --warn-soft:#fdf1e1; --danger:#b42318; --danger-soft:#fdeceb;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 14px rgba(0,0,0,.05);
+  --radius:16px; --nav-h:64px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#121614; --card:#1b211d; --ink:#e8ebe8; --muted:#9aa39d; --line:#2b332e;
+    --accent:#3fa872; --accent-ink:#0d1a12; --accent-soft:#203a2d;
+    --warn:#f2b366; --warn-soft:#3a2a12; --danger:#ff8a80; --danger-soft:#3b1d1a;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.35);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--accent)}
+h1,h2,h3{margin:0;font-weight:650;letter-spacing:-.01em}
+h2{font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:22px 0 10px}
+.hidden{display:none!important}
+
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line)}
+header h1{font-size:22px}
+.pill{font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.pill.off{background:var(--warn-soft);color:var(--warn)}
+.pill.busy{background:var(--accent-soft);color:var(--accent)}
+main{padding:0 16px;max-width:640px;margin:0 auto}
+section{animation:fade .15s ease-out}
+@keyframes fade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+.hero{padding:20px 0 4px;display:flex;flex-direction:column;gap:12px}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:var(--radius);padding:14px 18px;font-weight:650;background:var(--card);color:var(--ink);box-shadow:var(--shadow);min-height:52px;text-align:center;-webkit-tap-highlight-color:transparent}
+.btn:active{transform:scale(.985)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);font-size:20px;min-height:84px;border-radius:22px}
+.btn.primary .ico{font-size:30px}
+.btn.quiet{box-shadow:none;background:transparent;color:var(--accent);min-height:40px;padding:8px 12px}
+.btn.small{min-height:36px;padding:6px 12px;font-size:14px;border-radius:12px}
+.btn.danger{color:var(--danger)}
+.btn[disabled]{opacity:.5;pointer-events:none}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:10px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.tiny{font-size:12px}
+.notice{background:var(--warn-soft);color:var(--warn);border-radius:var(--radius);padding:12px 14px;margin:12px 0;font-size:14px}
+.notice.ok{background:var(--accent-soft);color:var(--accent)}
+.notice.bad{background:var(--danger-soft);color:var(--danger)}
+ul.list{list-style:none;margin:0;padding:0}
+.item{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
+.thumb{width:52px;height:64px;border-radius:8px;object-fit:cover;background:var(--line);flex:none}
+.thumb.ph{display:flex;align-items:center;justify-content:center;font-size:22px}
+.item .body{flex:1;min-width:0}
+.item .title{font-weight:650;display:flex;justify-content:space-between;gap:8px}
+.item .title .amt{white-space:nowrap}
+.item .sub{color:var(--muted);font-size:13px;margin-top:2px}
+.item .actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--warn-soft);color:var(--warn);vertical-align:middle;margin-left:6px}
+.badge.ok{background:var(--accent-soft);color:var(--accent)}
+.badge.bad{background:var(--danger-soft);color:var(--danger)}
+.lines{margin:10px 0 0;padding:10px 0 0;border-top:1px dashed var(--line);font-size:14px}
+.lines div{display:flex;justify-content:space-between;gap:12px;padding:3px 0}
+.lines div span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lines .cat{color:var(--muted);font-size:12px;margin-left:6px}
+.lines .tot{border-top:1px solid var(--line);margin-top:6px;padding-top:6px;font-weight:650}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--accent);border-right-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;color:var(--muted);padding:28px 10px;font-size:15px}
+
+/* Spending */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:12px 0 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-weight:600;font-size:14px}
+.chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.bigtotal{font-size:40px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.kpi{background:var(--bg);border-radius:12px;padding:10px 12px}
+.kpi .v{font-weight:700;font-size:18px}
+.kpi .l{color:var(--muted);font-size:12px}
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;font-size:14px}
+.bar .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .val{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+.bar .trk{grid-column:1/3;height:8px;background:var(--line);border-radius:999px;overflow:hidden}
+.bar .fil{height:100%;background:var(--accent);border-radius:999px;transition:width .3s ease}
+.bar .pct{color:var(--muted);font-weight:500;margin-left:6px;font-size:12px}
+svg.trend{width:100%;height:150px;display:block}
+svg.trend rect{fill:var(--accent);opacity:.85}
+svg.trend rect.cur{opacity:1}
+svg.trend rect.zero{opacity:.18}
+svg.trend text{fill:var(--muted);font-size:11px}
+svg.trend text.v{fill:var(--ink);font-size:11px;font-weight:600}
+.toplist{list-style:none;margin:0;padding:0}
+.toplist li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.toplist li:last-child{border-bottom:0}
+.toplist .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toplist .c{color:var(--muted);font-size:12px;white-space:nowrap}
+.toplist .t{font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* Settings */
+label.f{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px;font-weight:600}
+input.f,select.f{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:12px;font-size:16px}
+input.f:focus,select.f:focus{outline:2px solid var(--accent);border-color:transparent}
+.stack{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.stack .btn{min-height:46px}
+code{background:var(--bg);padding:2px 6px;border-radius:6px;font-size:13px;word-break:break-all}
+
+/* Nav */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:var(--card);border-top:1px solid var(--line);display:flex;z-index:6}
+nav.tabs button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;font-weight:600;color:var(--muted);-webkit-tap-highlight-color:transparent}
+nav.tabs button .i{font-size:22px;line-height:1}
+nav.tabs button.on{color:var(--accent)}
+nav.tabs button .dot{position:absolute;margin-left:28px;margin-top:-26px;background:var(--warn);color:#fff;font-size:10px;border-radius:999px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px}
+
+#toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 14px);transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:all .2s ease;z-index:9;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#updateBar{position:fixed;top:0;left:0;right:0;background:var(--accent);color:var(--accent-ink);text-align:center;padding:calc(8px + env(safe-area-inset-top)) 12px 8px;font-size:14px;font-weight:600;z-index:10}
+</style>
+</head>
+<body>
+<div id="updateBar" class="hidden" role="button">New version ready — tap to reload</div>
+<header>
+  <h1 id="hdrTitle">Receipts</h1>
+  <span id="netPill" class="pill">Online</span>
+</header>
+
+<main>
+  <!-- SNAP -->
+  <section id="view-snap">
+    <div class="hero">
+      <label class="btn primary" for="camInput"><span class="ico">📷</span><span>Snap a receipt</span></label>
+      <input id="camInput" type="file" accept="image/*" capture="environment" class="hidden">
+      <label class="btn" for="pickInput">🖼️ Choose from photos</label>
+      <input id="pickInput" type="file" accept="image/*" multiple class="hidden">
+    </div>
+    <div id="setupNotice" class="notice hidden">Not connected yet. Photos are saved on this phone — open <b>Settings</b> to connect them to the sheet.</div>
+    <div id="queueBlock" class="hidden">
+      <div class="row"><h2>Waiting to send <span id="queueCount"></span></h2><button class="btn quiet small" id="sendNowBtn">Send now</button></div>
+      <ul class="list" id="queueList"></ul>
+    </div>
+    <div id="recentBlock">
+      <h2>Recent</h2>
+      <ul class="list" id="recentList"></ul>
+      <div id="recentEmpty" class="empty hidden">No receipts yet. Snap the first one.</div>
+    </div>
+  </section>
+
+  <!-- SPENDING -->
+  <section id="view-spend" class="hidden">
+    <div class="chips" id="monthChips"></div>
+    <div id="spendBody"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="view-settings" class="hidden">
+    <div class="card">
+      <h3>This phone</h3>
+      <label class="f" for="whoSel">Who is snapping receipts here?</label>
+      <select class="f" id="whoSel">
+        <option value="">Choose…</option>
+        <option value="Paul">Paul</option>
+        <option value="Hannah">Hannah</option>
+        <option value="__other">Someone else</option>
+      </select>
+      <input class="f hidden" id="whoOther" placeholder="Name" style="margin-top:8px">
+    </div>
+
+    <div class="card">
+      <h3>Connection</h3>
+      <div id="connStatus" class="small muted" style="margin-top:4px">Not connected</div>
+      <label class="f" for="urlIn">Backend web app URL</label>
+      <input class="f" id="urlIn" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec">
+      <label class="f" for="tokIn">Join word</label>
+      <input class="f" id="tokIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. maple123">
+      <div class="stack">
+        <button class="btn" id="saveBtn">Save &amp; test</button>
+        <button class="btn quiet" id="shareBtn">Share setup link to another phone</button>
+      </div>
+      <label class="f" for="pasteIn">Got a setup link? Paste it here</label>
+      <div class="row">
+        <input class="f" id="pasteIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://…#setup=…">
+        <button class="btn small" id="pasteBtn">Apply</button>
+      </div>
+      <p class="small muted" id="sheetLinkWrap" style="margin:12px 0 0"></p>
+    </div>
+
+    <div class="card">
+      <h3>Install on the home screen</h3>
+      <p class="small muted" id="installHint" style="margin:6px 0 0"></p>
+    </div>
+
+    <div class="card">
+      <h3>Housekeeping</h3>
+      <div class="stack">
+        <button class="btn" id="syncAllBtn">Send everything now</button>
+        <button class="btn" id="refreshBtn">Refresh spending numbers</button>
+        <button class="btn" id="updateBtn">Check for app update</button>
+        <button class="btn danger" id="clearDoneBtn">Clear sent receipts from this phone</button>
+      </div>
+      <p class="tiny muted" style="margin:12px 0 0">Household Receipts <span id="verLbl"></span> · Photos stay on this phone only until they are filed; then the copy in Google Drive is the one that counts.</p>
+    </div>
+  </section>
+</main>
+
+<nav class="tabs">
+  <button data-view="snap" class="on"><span class="i">📷</span>Snap<span class="dot hidden" id="queueDot"></span></button>
+  <button data-view="spend"><span class="i">📊</span>Spending</button>
+  <button data-view="settings"><span class="i">⚙️</span>Settings</button>
+</nav>
+<div id="toast" role="status"></div>
+
+<script src="core.js"></script>
+<script>
+(function () {
+  'use strict';
+  const C = window.ReceiptsCore;
+  const APP_VERSION = '1.0.2';
+  // Pre-set connection so nobody has to type anything. Settings can still override.
+  const DEFAULTS = { url: '', token: 'prairie482' };
+  const $ = function (id) { return document.getElementById(id); };
+  const fmtMoney = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' });
+  const money = function (n) { return fmtMoney.format(Number(n) || 0); };
+  const esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); };
+
+  const state = { cfg: null, records: [], summary: null, summaryAt: 0, summaryStale: true, view: 'snap', month: 'all', expanded: {}, swReg: null, busy: false };
+
+  /* ---------- boot ---------- */
+  document.addEventListener('DOMContentLoaded', init);
+
+  async function init() {
+    $('verLbl').textContent = 'v' + APP_VERSION;
+    bindUi();
+    await applySetupLinkFromHash();
+    state.cfg = await C.getConfig();
+    if ((!state.cfg.url && DEFAULTS.url) || (!state.cfg.token && DEFAULTS.token)) {
+      state.cfg = await C.setConfig({ url: state.cfg.url || DEFAULTS.url, token: state.cfg.token || DEFAULTS.token });
+    }
+    fillSettings();
+    await refreshRecords();
+    const cached = await C.kvGet('summary');
+    if (cached && cached.data) { state.summary = cached.data; state.summaryAt = cached.at || 0; }
+    renderNet();
+    registerSw();
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* optional */ }
+    C.pruneDone(60).then(function (n) { if (n) refreshRecords(); });
+    if (!C.configReady(state.cfg)) { showView('settings'); }
+    await drainInbox();
+    kickSync();
+    maybeRefreshSummary();
+    setInterval(kickSync, 60000);
+  }
+
+  /** Photos shared in through the Android share sheet land in the inbox; resize + queue them here. */
+  let draining = false;
+  async function drainInbox() {
+    if (draining) return;
+    draining = true;
+    try {
+      if (/[?&]shared=/.test(location.search)) history.replaceState(null, '', location.pathname);
+      const inbox = await C.inboxAll();
+      if (!inbox.length) return;
+      showView('snap');
+      let added = 0, dups = 0;
+      for (const entry of inbox) {
+        try {
+          const prepared = await prepareImage(entry.blob);
+          const capturedAt = (entry.lastModified && entry.lastModified > 946684800000) ? new Date(entry.lastModified).toISOString() : new Date(entry.createdAt || Date.now()).toISOString();
+          const rec = await C.enqueue(prepared.blob, { thumb: prepared.thumb, who: state.cfg.who, capturedAt: capturedAt });
+          if (rec.duplicateOf) dups++; else added++;
+        } catch (e) { console.error('shared photo failed', e); }
+        await C.inboxDelete(entry.id);
+      }
+      await refreshRecords();
+      if (added) toast(added === 1 ? 'Shared photo added — sending…' : added + ' shared photos added — sending…');
+      if (dups) toast('Already had ' + (dups === 1 ? 'that one' : dups + ' of those'));
+      registerBgSync();
+      kickSync();
+    } finally { draining = false; }
+  }
+
+  function bindUi() {
+    $('camInput').addEventListener('change', function (e) { handleFiles(e.target.files, e.target); });
+    $('pickInput').addEventListener('change', function (e) { handleFiles(e.target.files, e.target); });
+    $('sendNowBtn').addEventListener('click', function () { kickSync(true); });
+    $('syncAllBtn').addEventListener('click', function () { kickSync(true); showView('snap'); });
+    $('refreshBtn').addEventListener('click', function () { state.summaryStale = true; showView('spend'); });
+    $('updateBtn').addEventListener('click', checkForUpdate);
+    $('clearDoneBtn').addEventListener('click', clearDone);
+    $('saveBtn').addEventListener('click', saveSettings);
+    $('shareBtn').addEventListener('click', shareSetup);
+    $('pasteBtn').addEventListener('click', applyPastedSetup);
+    $('whoSel').addEventListener('change', onWhoChange);
+    $('whoOther').addEventListener('change', onWhoChange);
+    $('updateBar').addEventListener('click', function () { location.reload(); });
+    document.querySelectorAll('nav.tabs button').forEach(function (b) { b.addEventListener('click', function () { showView(b.dataset.view); }); });
+    window.addEventListener('online', function () { renderNet(); kickSync(); });
+    window.addEventListener('offline', renderNet);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { drainInbox().then(kickSync); if (state.view === 'spend') maybeRefreshSummary(); } });
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener('message', function (e) {
+        if (e.data && e.data.type === 'synced') { refreshRecords(); if (e.data.result && e.data.result.sent) state.summaryStale = true; }
+      });
+    }
+    $('installHint').textContent = installHint();
+  }
+
+  function showView(v) {
+    state.view = v;
+    ['snap', 'spend', 'settings'].forEach(function (k) { $('view-' + k).classList.toggle('hidden', k !== v); });
+    document.querySelectorAll('nav.tabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.view === v); });
+    $('hdrTitle').textContent = v === 'spend' ? 'Spending' : (v === 'settings' ? 'Settings' : 'Receipts');
+    window.scrollTo(0, 0);
+    if (v === 'spend') { renderSpend(); maybeRefreshSummary(); }
+  }
+
+  /* ---------- capture ---------- */
+  async function handleFiles(fileList, input) {
+    const files = Array.prototype.slice.call(fileList || []);
+    if (!files.length) return;
+    state.busy = true; renderNet();
+    let added = 0, dups = 0, bad = 0;
+    for (const f of files) {
+      try {
+        const prepared = await prepareImage(f);
+        const capturedAt = (f.lastModified && f.lastModified > 946684800000) ? new Date(f.lastModified).toISOString() : new Date().toISOString();
+        const rec = await C.enqueue(prepared.blob, { thumb: prepared.thumb, who: state.cfg.who, capturedAt: capturedAt });
+        if (rec.duplicateOf) dups++; else added++;
+      } catch (e) {
+        console.error('prepare failed', e); bad++;
+      }
+    }
+    if (input) input.value = '';
+    state.busy = false;
+    await refreshRecords();
+    const tail = navigator.onLine ? ' — sending…' : ' — will send when there is signal';
+    if (added) toast((added === 1 ? 'Saved' : 'Saved ' + added) + tail);
+    if (dups) toast(dups === 1 ? 'That one was already added' : dups + ' were already added');
+    if (bad) toast(bad === 1 ? 'Could not read one photo' : 'Could not read ' + bad + ' photos');
+    registerBgSync();
+    kickSync();
+  }
+
+  function loadImg(file) {
+    return new Promise(function (resolve, reject) {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = function () { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('Image decode failed')); };
+      img.src = url;
+    });
+  }
+
+  async function prepareImage(file) {
+    const img = await loadImg(file);
+    const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    if (!w || !h) throw new Error('Empty image');
+    let maxEdge = 1600, quality = 0.82, blob = null;   // the reader downsizes past ~1568px anyway
+    for (let i = 0; i < 4; i++) {
+      blob = await encode(img, w, h, maxEdge, quality);
+      if (blob.size <= 1400000) break;          // ~1.4 MB keeps the upload quick on a weak signal
+      if (quality > 0.7) quality = 0.7; else maxEdge = Math.round(maxEdge * 0.8);
+    }
+    const thumbBlob = await encode(img, w, h, 180, 0.6);
+    const thumb = await blobToDataUrl(thumbBlob);
+    return { blob: blob, thumb: thumb };
+  }
+
+  function encode(img, w, h, maxEdge, quality) {
+    const scale = Math.min(1, maxEdge / Math.max(w, h));
+    const cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+    const cv = document.createElement('canvas');
+    cv.width = cw; cv.height = ch;
+    const ctx = cv.getContext('2d');
+    ctx.drawImage(img, 0, 0, cw, ch);
+    return new Promise(function (resolve, reject) {
+      cv.toBlob(function (b) { if (b) resolve(b); else reject(new Error('Encode failed')); }, 'image/jpeg', quality);
+    });
+  }
+
+  function blobToDataUrl(blob) {
+    return new Promise(function (resolve, reject) {
+      const r = new FileReader();
+      r.onload = function () { resolve(r.result); };
+      r.onerror = function () { reject(r.error); };
+      r.readAsDataURL(blob);
+    });
+  }
+
+  /* ---------- sync ---------- */
+  let syncTimer = null;
+  function kickSync(force) {
+    if (syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(function () { runSync(force); }, force ? 0 : 400);
+  }
+
+  async function runSync(force) {
+    if (!C.configReady(state.cfg)) { renderNet(); return; }
+    renderNet(true);
+    try {
+      const out = await C.syncAll({ force: !!force, onProgress: function () { refreshRecords(); } });
+      if (out.sent) { state.summaryStale = true; toast(out.sent === 1 ? 'Filed to the sheet ✓' : out.sent + ' filed to the sheet ✓'); }
+      if (force && out.offline) toast('No signal — will send when you are back online');
+      if (force && !out.offline && !out.sent && !out.failed && !out.remaining) toast('Nothing waiting');
+    } catch (e) {
+      console.error('sync failed', e);
+    }
+    await refreshRecords();
+    renderNet();
+  }
+
+  async function registerBgSync() {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg && 'sync' in reg) await reg.sync.register('sync-receipts');
+    } catch (e) { /* not supported (iOS) — the app syncs when opened instead */ }
+  }
+
+  /* ---------- records UI ---------- */
+  async function refreshRecords() {
+    state.records = await C.allRecords();
+    renderRecords();
+  }
+
+  function statusText(r) {
+    if (r.status === 'pending') return navigator.onLine ? 'Queued' : 'Waiting for signal';
+    if (r.status === 'uploading') return '<span class="spin"></span>Reading receipt…';
+    if (r.status === 'error') return (r.retryable ? 'Will retry — ' : '') + esc(r.lastError || 'Error');
+    return '';
+  }
+
+  function renderRecords() {
+    const waiting = state.records.filter(function (r) { return r.status === 'pending' || r.status === 'uploading' || r.status === 'error'; });
+    const done = state.records.filter(function (r) { return r.status === 'done' || r.status === 'rejected'; }).slice(0, 40);
+
+    $('queueBlock').classList.toggle('hidden', waiting.length === 0);
+    $('queueCount').textContent = waiting.length ? '(' + waiting.length + ')' : '';
+    $('queueDot').classList.toggle('hidden', waiting.length === 0);
+    $('queueDot').textContent = waiting.length;
+    $('setupNotice').classList.toggle('hidden', C.configReady(state.cfg));
+
+    $('queueList').innerHTML = waiting.map(function (r) {
+      const actions = [];
+      if (r.status === 'error') actions.push('<button class="btn small" data-act="retry" data-id="' + r.id + '">Retry now</button>');
+      if (r.status !== 'uploading') actions.push('<button class="btn small danger" data-act="del" data-id="' + r.id + '">Delete</button>');
+      return '<li class="item">' + thumbHtml(r) +
+        '<div class="body"><div class="title"><span>Receipt</span><span class="amt muted tiny">' + esc(timeAgo(r.createdAt)) + '</span></div>' +
+        '<div class="sub">' + statusText(r) + '</div>' +
+        (actions.length ? '<div class="actions">' + actions.join('') + '</div>' : '') + '</div></li>';
+    }).join('');
+
+    $('recentEmpty').classList.toggle('hidden', done.length > 0 || waiting.length > 0);
+    $('recentList').innerHTML = done.map(function (r) {
+      if (r.status === 'rejected') {
+        return '<li class="item">' + thumbHtml(r) + '<div class="body"><div class="title"><span>Not a receipt<span class="badge bad">skipped</span></span><span class="amt muted tiny">' + esc(timeAgo(r.createdAt)) + '</span></div>' +
+          '<div class="sub">' + esc(r.message || '') + '</div><div class="actions"><button class="btn small danger" data-act="del" data-id="' + r.id + '">Remove</button></div></div></li>';
+      }
+      const rec = r.result || {};
+      const items = rec.items || [];
+      const open = !!state.expanded[r.id];
+      const badge = rec.needsReview ? '<span class="badge">check</span>' : '';
+      const dup = r.duplicate ? '<span class="badge ok">already filed</span>' : '';
+      let lines = '';
+      if (open) {
+        lines = '<div class="lines">' + items.map(function (it) {
+          const q = (it.qty && it.qty !== 1) ? it.qty + ' × ' : '';
+          return '<div><span>' + esc(q + it.name) + '<span class="cat">' + esc(it.category || '') + '</span></span><span>' + money(it.lineTotal) + '</span></div>';
+        }).join('') +
+          (rec.gst != null && rec.gst !== '' ? '<div><span>GST</span><span>' + money(rec.gst) + '</span></div>' : '') +
+          (rec.otherTax ? '<div><span>Other tax</span><span>' + money(rec.otherTax) + '</span></div>' : '') +
+          (rec.tip ? '<div><span>Tip</span><span>' + money(rec.tip) + '</span></div>' : '') +
+          '<div class="tot"><span>Total' + (rec.payment ? ' · ' + esc(rec.payment) : '') + '</span><span>' + money(rec.total) + '</span></div>' +
+          (rec.needsReview ? '<div class="muted small" style="display:block;margin-top:6px">⚠️ ' + esc(rec.reviewNotes || 'Please check this one in the sheet') + '</div>' : '') +
+          (rec.photoUrl ? '<div style="display:block;margin-top:6px"><a href="' + esc(rec.photoUrl) + '" target="_blank" rel="noopener">Open photo in Drive</a></div>' : '') +
+          '</div>';
+      }
+      return '<li class="item" data-act="toggle" data-id="' + r.id + '">' + thumbHtml(r) +
+        '<div class="body"><div class="title"><span>' + esc(rec.store || 'Receipt') + badge + dup + '</span><span class="amt">' + money(rec.total) + '</span></div>' +
+        '<div class="sub">' + esc(rec.date || '') + ' · ' + items.length + (items.length === 1 ? ' item' : ' items') + (rec.who ? ' · ' + esc(rec.who) : '') + '</div>' + lines + '</div></li>';
+    }).join('');
+  }
+
+  function thumbHtml(r) {
+    return r.thumb ? '<img class="thumb" alt="" src="' + r.thumb + '">' : '<div class="thumb ph">🧾</div>';
+  }
+
+  document.addEventListener('click', async function (e) {
+    const el = e.target.closest('[data-act]');
+    if (!el) return;
+    const act = el.dataset.act, id = el.dataset.id;
+    if (act === 'toggle') {
+      if (e.target.closest('a')) return;
+      state.expanded[id] = !state.expanded[id]; renderRecords(); return;
+    }
+    e.stopPropagation();
+    if (act === 'del') {
+      if (!confirm('Remove this receipt from the phone?')) return;
+      await C.deleteRecord(id); await refreshRecords(); return;
+    }
+    if (act === 'retry') {
+      const r = await C.getRecord(id);
+      if (r) { r.nextTryAt = 0; r.status = 'pending'; r.retryable = true; r.configProblem = false; await C.putRecord(r); }
+      await refreshRecords(); kickSync(true);
+    }
+  });
+
+  /* ---------- spending ---------- */
+  async function maybeRefreshSummary() {
+    if (!C.configReady(state.cfg) || !navigator.onLine) return;
+    if (!state.summaryStale && (Date.now() - state.summaryAt) < 5 * 60 * 1000) return;
+    try {
+      const data = await C.fetchSummary(state.cfg);
+      if (data && data.ok) {
+        state.summary = data; state.summaryAt = Date.now(); state.summaryStale = false;
+        await C.kvSet('summary', { at: state.summaryAt, data: data });
+        if (data.sheetUrl) { await C.kvSet('sheetUrl', data.sheetUrl); renderSheetLink(data.sheetUrl); }
+        if (state.view === 'spend') renderSpend();
+      } else if (data && data.error === 'bad_token') {
+        toast('Join word is wrong — check Settings');
+      }
+    } catch (e) { console.warn('summary refresh failed', e); }
+  }
+
+  function lastTwelveMonths() {
+    const out = [];
+    const d = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const m = new Date(d.getFullYear(), d.getMonth() - i, 1);
+      out.push(m.getFullYear() + '-' + String(m.getMonth() + 1).padStart(2, '0'));
+    }
+    return out;
+  }
+
+  function renderSpend() {
+    const s = state.summary;
+    const chips = $('monthChips'), body = $('spendBody');
+    if (!s) {
+      chips.innerHTML = '';
+      body.innerHTML = '<div class="empty">' + (C.configReady(state.cfg)
+        ? (navigator.onLine ? 'Loading your spending…' : 'No signal and nothing cached yet — open this tab when you are back online.')
+        : 'Connect the app in Settings to see where the money goes.') + '</div>';
+      return;
+    }
+    const months = s.months || [];
+    if (state.month !== 'all' && !months.some(function (m) { return m.month === state.month; })) state.month = 'all';
+    chips.innerHTML = '<button class="chip' + (state.month === 'all' ? ' on' : '') + '" data-m="all">All time</button>' +
+      months.slice(0, 13).map(function (m) { return '<button class="chip' + (state.month === m.month ? ' on' : '') + '" data-m="' + m.month + '">' + esc(m.label) + '</button>'; }).join('');
+    chips.querySelectorAll('.chip').forEach(function (b) { b.addEventListener('click', function () { state.month = b.dataset.m; renderSpend(); }); });
+
+    const d = state.month === 'all' ? s.allTime : months.find(function (m) { return m.month === state.month; });
+    const period = state.month === 'all' ? ((s.allTime.from && s.allTime.to) ? s.allTime.from + ' → ' + s.allTime.to : 'All time') : (d.label || state.month);
+    const taxTip = (d.byCategory || []).find(function (c) { return c.name === 'Tax & tip'; });
+    const asOf = state.summaryAt ? 'Updated ' + timeAgo(state.summaryAt) : '';
+    const perReceipt = d.count ? d.total / d.count : 0;
+
+    let html = '<div class="card">' +
+      '<div class="row"><div class="muted small">' + esc(period) + '</div><div class="tiny muted">' + esc(asOf) + (navigator.onLine ? '' : ' · offline') + '</div></div>' +
+      '<div class="bigtotal">' + money(d.total) + '</div>' +
+      '<div class="kpis"><div class="kpi"><div class="v">' + d.count + '</div><div class="l">receipts</div></div>' +
+      '<div class="kpi"><div class="v">' + money(perReceipt) + '</div><div class="l">per receipt</div></div>' +
+      '<div class="kpi"><div class="v">' + money(taxTip ? taxTip.total : 0) + '</div><div class="l">tax &amp; tips</div></div>' +
+      '<div class="kpi"><div class="v">' + (d.byStore && d.byStore[0] ? esc(d.byStore[0].name) : '—') + '</div><div class="l">top store</div></div></div></div>';
+
+    if (s.needsReview) {
+      html += '<div class="notice">⚠️ ' + s.needsReview + (s.needsReview === 1 ? ' receipt needs' : ' receipts need') + ' a quick look' + (s.sheetUrl ? ' — <a href="' + esc(s.sheetUrl) + '" target="_blank" rel="noopener">open the sheet</a>' : '') + '</div>';
+    }
+
+    // Monthly trend
+    html += '<h2>By month</h2><div class="card">' + trendSvg(months) + '</div>';
+
+    html += '<h2>What we buy</h2><div class="card">' + barsHtml(d.byCategory || [], d.total, 9) + '</div>';
+    html += '<h2>Where we spend</h2><div class="card">' + barsHtml(d.byStore || [], d.total, 8, true) + '</div>';
+
+    if (d.topItems && d.topItems.length) {
+      html += '<h2>Biggest items</h2><div class="card"><ul class="toplist">' + d.topItems.slice(0, 12).map(function (it) {
+        return '<li><span class="n">' + esc(it.name) + '</span><span class="c">' + (it.count > 1 ? '×' + it.count : '') + '</span><span class="t">' + money(it.total) + '</span></li>';
+      }).join('') + '</ul></div>';
+    }
+    if (d.byWho && d.byWho.length > 1) {
+      html += '<h2>Who</h2><div class="card">' + barsHtml(d.byWho, d.total, 5) + '</div>';
+    }
+    if (s.sheetUrl) html += '<p class="small" style="text-align:center;margin:18px 0"><a href="' + esc(s.sheetUrl) + '" target="_blank" rel="noopener">Open the Google Sheet</a></p>';
+    body.innerHTML = html;
+  }
+
+  function barsHtml(list, grand, limit, withCount) {
+    if (!list || !list.length) return '<div class="empty" style="padding:10px">Nothing here yet</div>';
+    const positive = list.filter(function (x) { return x.total > 0; });
+    const max = Math.max.apply(null, positive.map(function (x) { return x.total; }).concat([0.01]));
+    const top = positive.slice(0, limit);
+    const rest = positive.slice(limit).reduce(function (a, x) { return a + x.total; }, 0);
+    if (rest > 0.005) top.push({ name: 'Everything else', total: rest });
+    return '<div class="bars">' + top.map(function (x) {
+      const pct = grand > 0 ? Math.round(x.total / grand * 100) : 0;
+      return '<div class="bar"><span class="lbl">' + esc(x.name) + (withCount && x.count ? '<span class="pct">' + x.count + (x.count === 1 ? ' visit' : ' visits') + '</span>' : '') + '</span>' +
+        '<span class="val">' + money(x.total) + '<span class="pct">' + pct + '%</span></span>' +
+        '<div class="trk"><div class="fil" style="width:' + Math.max(2, Math.round(x.total / max * 100)) + '%"></div></div></div>';
+    }).join('') + '</div>';
+  }
+
+  function trendSvg(months) {
+    const keys = lastTwelveMonths();
+    const byKey = {};
+    (months || []).forEach(function (m) { byKey[m.month] = m.total; });
+    const vals = keys.map(function (k) { return byKey[k] || 0; });
+    const max = Math.max.apply(null, vals.concat([1]));
+    const W = 600, H = 150, padL = 6, padR = 6, padT = 22, padB = 24;
+    const bw = (W - padL - padR) / keys.length;
+    const cur = keys[keys.length - 1];
+    let out = '<svg class="trend" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-label="Spending by month">';
+    keys.forEach(function (k, i) {
+      const v = vals[i];
+      const bh = v > 0 ? Math.max(3, (H - padT - padB) * v / max) : 3;
+      const x = padL + i * bw + bw * 0.18, w = bw * 0.64, y = H - padB - bh;
+      out += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="4" class="' + (v > 0 ? (k === cur ? 'cur' : '') : 'zero') + '"><title>' + esc(k + ': ' + money(v)) + '</title></rect>';
+      if (v > 0 && (v === max || k === cur)) out += '<text class="v" x="' + (x + w / 2).toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" text-anchor="middle">' + esc(shortMoney(v)) + '</text>';
+      const mon = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][Number(k.slice(5, 7)) - 1];
+      out += '<text x="' + (x + w / 2).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle">' + mon + '</text>';
+    });
+    return out + '</svg>';
+  }
+
+  function shortMoney(v) { return v >= 1000 ? '$' + (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : '$' + Math.round(v); }
+
+  /* ---------- settings ---------- */
+  function fillSettings() {
+    const cfg = state.cfg || {};
+    $('urlIn').value = cfg.url || '';
+    $('tokIn').value = cfg.token || '';
+    const who = cfg.who || '';
+    if (!who) $('whoSel').value = '';
+    else if (who === 'Paul' || who === 'Hannah') $('whoSel').value = who;
+    else { $('whoSel').value = '__other'; $('whoOther').value = who; }
+    $('whoOther').classList.toggle('hidden', $('whoSel').value !== '__other');
+    $('connStatus').textContent = C.configReady(cfg) ? (cfg.tokenBad ? 'Join word was rejected — check it' : 'Connected') : 'Not connected';
+    C.kvGet('sheetUrl').then(renderSheetLink);
+  }
+
+  function renderSheetLink(url) {
+    $('sheetLinkWrap').innerHTML = url ? 'Everything files into <a href="' + esc(url) + '" target="_blank" rel="noopener">this Google Sheet</a>.' : '';
+  }
+
+  async function onWhoChange() {
+    const sel = $('whoSel').value;
+    $('whoOther').classList.toggle('hidden', sel !== '__other');
+    const who = sel === '__other' ? $('whoOther').value.trim() : sel;
+    state.cfg = await C.setConfig({ who: who });
+    if (who) toast('Hi ' + who + ' 👋');
+  }
+
+  async function saveSettings() {
+    const url = $('urlIn').value.trim(), token = $('tokIn').value.trim();
+    if (!url || !token) { toast('Need both the URL and the join word'); return; }
+    if (!/^https:\/\//i.test(url) && !/^http:\/\/(localhost|127\.0\.0\.1)/i.test(url)) { toast('The URL should start with https://'); return; }
+    if (!/\/exec$/.test(url.replace(/[?#].*$/, '').replace(/\/+$/, ''))) toast('Tip: the web app URL normally ends in /exec');
+    state.cfg = await C.setConfig({ url: url, token: token });
+    fillSettings();
+    await testConnection();
+    // flag any records stuck on a config problem for retry
+    for (const r of state.records) {
+      if (r.status === 'error' && !r.retryable) { r.retryable = true; r.nextTryAt = 0; r.configProblem = false; await C.putRecord(r); }
+    }
+    kickSync(true);
+  }
+
+  async function testConnection() {
+    $('connStatus').textContent = 'Testing…';
+    try {
+      const res = await C.ping(state.cfg);
+      if (res && res.ok) {
+        $('connStatus').textContent = 'Connected ✓' + (res.claudeKey ? '' : ' — but the Claude key is missing on the backend');
+        if (res.sheetUrl) { await C.kvSet('sheetUrl', res.sheetUrl); renderSheetLink(res.sheetUrl); }
+        state.summaryStale = true;
+        toast('Connected ✓');
+      } else {
+        $('connStatus').textContent = (res && res.message) || 'The backend said no';
+        toast((res && res.message) || 'Could not connect');
+      }
+    } catch (e) {
+      $('connStatus').textContent = e.message || 'Could not reach the backend';
+      toast(e.message || 'Could not reach the backend');
+    }
+  }
+
+  function setupLink() {
+    const payload = btoa(JSON.stringify({ u: state.cfg.url, t: state.cfg.token }));
+    return location.origin + location.pathname + '#setup=' + encodeURIComponent(payload);
+  }
+
+  async function shareSetup() {
+    if (!C.configReady(state.cfg)) { toast('Save the connection first'); return; }
+    const link = setupLink();
+    const text = 'Household Receipts app — open this link, then add it to your home screen:\n' + link;
+    try {
+      if (navigator.share) { await navigator.share({ title: 'Household Receipts', text: text }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(text); toast('Setup link copied — paste it into a text to the other phone'); }
+    catch (e) { prompt('Copy this setup link:', link); }
+  }
+
+  function parseSetup(str) {
+    const m = /#setup=([^&\s]+)/.exec(String(str || ''));
+    let raw = m ? m[1] : String(str || '').trim();
+    try {
+      const obj = JSON.parse(atob(decodeURIComponent(raw)));
+      if (obj && obj.u && obj.t) return { url: String(obj.u), token: String(obj.t) };
+    } catch (e) { /* not a setup code */ }
+    return null;
+  }
+
+  async function applySetupLinkFromHash() {
+    if (!/#setup=/.test(location.hash)) return;
+    const cfg = parseSetup(location.hash);
+    history.replaceState(null, '', location.pathname + location.search);
+    if (!cfg) { toast('That setup link did not work'); return; }
+    state.cfg = await C.setConfig(cfg);
+    toast('Connected to the household sheet ✓');
+    if (isIos() && !isStandalone()) {
+      setTimeout(function () { alert('One more step on iPhone: tap Share → "Add to Home Screen". Then open the Receipts app from your home screen and paste this same link into Settings (iPhone keeps the two separate).'); }, 400);
+    }
+  }
+
+  async function applyPastedSetup() {
+    const cfg = parseSetup($('pasteIn').value);
+    if (!cfg) { toast('That does not look like a setup link'); return; }
+    state.cfg = await C.setConfig(cfg);
+    $('pasteIn').value = '';
+    fillSettings();
+    await testConnection();
+    kickSync(true);
+  }
+
+  async function clearDone() {
+    const n = state.records.filter(function (r) { return r.status === 'done' || r.status === 'rejected'; }).length;
+    if (!n) { toast('Nothing to clear'); return; }
+    if (!confirm('Remove ' + n + ' sent receipt' + (n === 1 ? '' : 's') + ' from this phone? They stay in the sheet and in Drive.')) return;
+    await C.pruneDone(0);
+    await refreshRecords();
+    toast('Cleared');
+  }
+
+  /* ---------- service worker ---------- */
+  function registerSw() {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
+      state.swReg = reg;
+      reg.addEventListener('updatefound', function () {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', function () {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) $('updateBar').classList.remove('hidden');
+        });
+      });
+    }).catch(function (e) { console.warn('SW registration failed', e); });
+  }
+
+  async function checkForUpdate() {
+    if (!state.swReg) { toast('Offline mode is not available in this browser'); return; }
+    toast('Checking…');
+    try { await state.swReg.update(); setTimeout(function () { if ($('updateBar').classList.contains('hidden')) toast('You have the latest version'); }, 2500); }
+    catch (e) { toast('Could not check right now'); }
+  }
+
+  /* ---------- misc ---------- */
+  function renderNet(busy) {
+    const p = $('netPill');
+    const waiting = state.records.filter(function (r) { return r.status === 'pending' || r.status === 'uploading' || (r.status === 'error' && r.retryable); }).length;
+    if (!navigator.onLine) { p.className = 'pill off'; p.textContent = waiting ? 'Offline · ' + waiting + ' waiting' : 'Offline'; return; }
+    if (busy || state.busy) { p.className = 'pill busy'; p.textContent = 'Sending…'; return; }
+    p.className = 'pill'; p.textContent = waiting ? waiting + ' waiting' : 'Online';
+  }
+
+  function timeAgo(ts) {
+    const s = Math.round((Date.now() - ts) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.round(s / 60) + ' min ago';
+    if (s < 86400) return Math.round(s / 3600) + ' h ago';
+    const d = new Date(ts);
+    return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
+  }
+
+  let toastTimer = null;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg; t.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2600);
+  }
+
+  function isIos() { return /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+  function isStandalone() { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
+  function installHint() {
+    if (isStandalone()) return 'Installed ✓ — you are running it from the home screen.';
+    if (isIos()) return 'In Safari: tap the Share button, then "Add to Home Screen". The app then opens full-screen and works with no signal.';
+    return 'In Chrome: tap the ⋮ menu, then "Add to Home screen" (or "Install app"). Once installed it works with no signal, finishes sending in the background, and shows up as "Receipts" in the Share menu — so you can snap with the normal camera and share the photo straight here.';
+  }
+
+  // expose a little for tests
+  window.__receipts = { state: state, refreshRecords: refreshRecords, runSync: runSync, renderSpend: renderSpend, prepareImage: prepareImage, drainInbox: drainInbox };
+})();
+</script>
+</body>
+</html>
