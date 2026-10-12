@@ -15,7 +15,8 @@
 
 **Day to day**
 - The app opens straight to the camera. Tap the shutter; it reads the lines and files them; no signal = queued until later.
-- Zoom: slider with 0.5× / 1× / 2× taps under the viewfinder; the app reopens at the last zoom used. Below 1× uses the phone's wide lens — if the phone reports its lenses without names, the app guesses and the ↔ Lens button corrects it (remembered).
+- Zoom: slider with 1× / 2× / 3× taps under the viewfinder; the app reopens at the last zoom used. Below 1× needs the phone's wide lens, which Chrome on Android (incl. Pixel 9) does not expose to web apps — so the **0.5× 📱** chip opens the phone's own camera app instead (tap 0.5× there). Where a browser does expose the wide lens (iPhone labels it), the slider goes down to 0.5× directly. More → Camera shows what the phone exposes.
+- The Feed Calculator app lives at the same address one level up; its manifest scope is narrowed to its own `index.html` so Android does not open Receipts links inside the Feed Calculator app.
 - *Long receipt* mode: take the top, then the rest, tap Done — filed as one receipt.
 - *Photo / PDF* button (or the share sheet): screenshots of online orders (long ones are sliced automatically) and PDF receipts from email.
 - *Spending* tab: Month / Quarter / Year / All with ‹ › arrows, "vs last period", tap a category or store to drill in, tap a bar to jump to that period.

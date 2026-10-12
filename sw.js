@@ -1,5 +1,5 @@
 /* PRO Feed Calculator service worker: the app must open and work with no signal. */
-var CACHE = 'pro-feedcalc-v5';
+var CACHE = 'pro-feedcalc-v6';
 var CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 var FONTS = /^https:\/\/fonts\.(googleapis|gstatic)\.com\//;
 
@@ -33,6 +33,8 @@ self.addEventListener('fetch', function (e) {
     }));
     return;
   }
+
+  if (url.pathname.indexOf('/receipts/') >= 0) return;   // the Receipts app has its own worker
 
   if (url.origin === location.origin) {
     e.respondWith(caches.match(req).then(function (hit) {

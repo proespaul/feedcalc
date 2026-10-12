@@ -343,6 +343,12 @@ nav.tabs button .dot{position:absolute;top:8px;left:calc(50% + 8px);background:v
     </div>
 
     <div class="card">
+      <h3>Camera</h3>
+      <p class="small muted" id="camInfo" style="margin:6px 0 0">Open the Snap tab once to read the camera details.</p>
+      <p class="tiny muted" style="margin:8px 0 0">Below 1× needs the phone's wide lens. Chrome on most Android phones can't drive that lens from a web app, so the 0.5× button opens the phone camera instead (tap 0.5× there, then the shutter).</p>
+    </div>
+
+    <div class="card">
       <h3>Housekeeping</h3>
       <div class="stack">
         <button class="btn" id="syncAllBtn">Send everything now</button>
@@ -370,7 +376,7 @@ nav.tabs button .dot{position:absolute;top:8px;left:calc(50% + 8px);background:v
 (function () {
   'use strict';
   const C = window.ReceiptsCore;
-  const APP_VERSION = '1.2.0';
+  const APP_VERSION = '1.2.1';
   // Pre-set connection so nobody has to type anything. More → Connection can still override.
   const DEFAULTS = { url: 'https://script.google.com/macros/s/AKfycbwmez6dyUMTubrqBMnQ6ehYslyQbhS6mXGPGBAP5OJ8P4sU_OsZZJEDba2sKaIT5amI/exec', token: 'prairie482' };
   const $ = function (id) { return document.getElementById(id); };
@@ -536,6 +542,7 @@ nav.tabs button .dot{position:absolute;top:8px;left:calc(50% + 8px);background:v
       cam.caps = cam.track.getCapabilities ? cam.track.getCapabilities() : {};
       $('torchBtn').classList.toggle('hidden', !cam.caps.torch);
       setupZoom();
+      v.addEventListener('loadedmetadata', renderCamInfo, { once: true });
       $('camOff').classList.add('hidden');
       $('camTop').classList.remove('hidden'); $('camBottom').classList.remove('hidden'); $('camHint').classList.remove('hidden');
       cam.off = false;
@@ -566,9 +573,16 @@ nav.tabs button .dot{position:absolute;top:8px;left:calc(50% + 8px);background:v
     $('camRetry').textContent = /webcam/.test(why) ? 'Try the webcam' : 'Try the live camera';
   }
 
+  function renderCamInfo() {
+    const cam = state.cam; const el = $('camInfo'); if (!el) return;
+    const z = cam.caps && cam.caps.zoom;
+    const lenses = cam.allCams && cam.allCams.length ? cam.allCams.map(function (d) { return d.label || 'camera'; }).join(' · ') : (cam.track ? '1 lens reported' : '—');
+    el.textContent = 'Lenses: ' + lenses + '. Zoom: ' + (z && isFinite(z.min) ? z.min + '×–' + z.max + '×' : 'not adjustable here') + (cam.caps && cam.caps.torch ? '. Flash: yes' : '. Flash: no') + '. Resolution: ' + ($('camVideo').videoWidth || 0) + '×' + ($('camVideo').videoHeight || 0) + '.';
+  }
   async function listBackCameras() {
     try {
       const devs = await navigator.mediaDevices.enumerateDevices();
+      state.cam.allCams = devs.filter(function (d) { return d.kind === 'videoinput'; });
       const back = devs.filter(function (d) { return d.kind === 'videoinput' && /back|rear|environment/i.test(d.label || ''); });
       if (back.length > 1) {
         state.cam.backCams = back;
@@ -616,11 +630,16 @@ nav.tabs button .dot{position:absolute;top:8px;left:calc(50% + 8px);background:v
     const uiMin = Math.min(cam.zoomMin, cam.wideIdx >= 0 ? 0.5 : 1);
     const uiMax = Math.max(onWide ? 1 : cam.zoomMax, 1);
     const wrap = $('zoomWrap'), slider = $('zoomRange');
-    if (uiMax - uiMin < 0.1) { wrap.classList.add('hidden'); return; }
     wrap.classList.remove('hidden');
+    $('zoomRange').parentElement.classList.toggle('hidden', uiMax - uiMin < 0.1);   // no zoom at all: keep just the chips
     slider.min = uiMin; slider.max = uiMax; slider.step = 0.05;
     const chips = [0.5, 1, 2, 3].filter(function (v) { return v >= uiMin - 0.01 && v <= uiMax + 0.01; });
-    $('zoomChips').innerHTML = chips.map(function (v) { return '<button class="zchip" data-z="' + v + '" type="button">' + v + '×</button>'; }).join('');
+    let chipHtml = chips.map(function (v) { return '<button class="zchip" data-z="' + v + '" type="button">' + v + '×</button>'; }).join('');
+    // The browser cannot reach the wide lens on this phone: 0.5× opens the phone's own camera app instead
+    if (uiMin >= 0.99) chipHtml = '<label class="zchip" for="camInput" title="Opens the phone camera, which can use the wide lens">0.5× 📱</label>' + chipHtml;
+    $('zoomChips').innerHTML = chipHtml;
+    $('zoomChips').querySelectorAll('label').forEach(function (l) { l.addEventListener('click', function () { if (!state.cam.wideToastShown) { state.cam.wideToastShown = true; toast('Chrome can\'t use the wide lens itself — tap 0.5× in the phone camera'); } }); });
+    renderCamInfo();
     const want = Math.min(uiMax, Math.max(uiMin, Number(cam.zoomWanted || (state.cfg && state.cfg.camZoom) || 1)));
     setZoom(want, false, true);
   }

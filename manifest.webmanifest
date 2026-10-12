@@ -3,7 +3,7 @@
   "short_name": "Feed Calc",
   "description": "CEC feeder sizing and a priced ball park for PRO Electrical Services.",
   "start_url": "./index.html",
-  "scope": "./",
+  "scope": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#F2F4F8",
