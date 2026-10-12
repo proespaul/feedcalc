@@ -29,8 +29,10 @@ const CONFIG = {
   FOLDER_NAME: 'Household Receipts (photos)',
   PAGES_FOLDER: '_pages',               // slices of long screenshots live here (one file per slice)
   DEFAULT_MODEL: 'claude-sonnet-5-5',   // override with script property CLAUDE_MODEL
+  DEFAULT_THINKING: 'off',              // 'off' = no up-front thinking (fast, cheap); 'adaptive' lets the model think first. Script property CLAUDE_THINKING overrides.
+  DEFAULT_EFFORT: 'medium',             // low | medium | high. Script property CLAUDE_EFFORT overrides.
   DEFAULT_TOKEN: 'prairie482',          // the join word baked into the phone app; rotateJoinWord() changes it
-  MAX_TOKENS: 6000,
+  MAX_TOKENS: 8000,
   BANK_MAX_TOKENS: 12000,
   TZ: 'America/Edmonton',
   CURRENCY: 'CAD',
@@ -122,8 +124,9 @@ function setup() {
 
 /** Optional: run to confirm the Claude key works (logs the reply). */
 function testClaudeKey() {
-  const res = callClaude_([{ type: 'text', text: 'Reply with the single word OK.' }], 20);
-  Logger.log('Claude replied: ' + res.text);
+  const res = callClaude_([{ type: 'text', text: 'Return ONLY this JSON: {"ok": true}' }], 200);
+  const u = (res.raw && res.raw.usage) || {};
+  Logger.log('Claude replied: ' + res.text + '   (model ' + getModel_() + ', output tokens ' + u.output_tokens + ', thinking tokens ' + ((u.output_tokens_details || {}).thinking_tokens || 0) + ')');
   return res.text;
 }
 
@@ -673,6 +676,13 @@ function callClaude_(content, maxTokens) {
     system: 'You are a meticulous bookkeeper who transcribes retail receipts and bank statements for a Canadian household budget. You always answer with valid JSON only.',
     messages: [{ role: 'user', content: content }]
   };
+  // Thinking is on by default for current models and counts against max_tokens; transcription does not need it.
+  const props = PropertiesService.getScriptProperties();
+  const thinking = String(props.getProperty('CLAUDE_THINKING') || CONFIG.DEFAULT_THINKING).toLowerCase();
+  const effort = String(props.getProperty('CLAUDE_EFFORT') || CONFIG.DEFAULT_EFFORT).toLowerCase();
+  if (thinking === 'adaptive') body.thinking = { type: 'adaptive' };
+  else if (thinking !== 'default') body.thinking = { type: 'between_tools' };
+  if (effort !== 'default') body.output_config = { effort: effort };
   const options = {
     method: 'post',
     contentType: 'application/json',

@@ -29,6 +29,8 @@
 **Sheet tabs** — Receipts, Items, Bank, Bank Rules, Budgets, Categories (editable), Log.
 Receipts with Source = `bank` are expenses filed from a statement; `superseded` means a real receipt replaced one later.
 
+**Script properties** — `ANTHROPIC_API_KEY` (required), `CLAUDE_MODEL` (default claude-sonnet-5-5), `CLAUDE_THINKING` (`off` = no up-front thinking, the default; `adaptive` if receipts keep getting misread), `CLAUDE_EFFORT` (`medium` default; `low` / `high`). `APP_TOKEN`, `SPREADSHEET_ID`, `FOLDER_ID` are set by `setup`.
+
 **If something's off**
 - "Join word is wrong" → the backend's `APP_TOKEN` script property differs from the app; run `rotateJoinWord` only together with an app update.
 - "did not answer as a web app" → deploy with access *Anyone* and use the `/exec` URL, not `/dev`.
