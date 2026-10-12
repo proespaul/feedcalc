@@ -1,5 +1,5 @@
 /* PRO Feed Calculator service worker: the app must open and work with no signal. */
-var CACHE = 'pro-feedcalc-v6';
+var CACHE = 'pro-feedcalc-v7';
 var CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 var FONTS = /^https:\/\/fonts\.(googleapis|gstatic)\.com\//;
 
