@@ -3,7 +3,8 @@
 **Done**
 - App is live: **https://proespaul.github.io/feedcalc/receipts/** (served from this repo's `receipts/` folder).
 - The join word `prairie482` is baked into the app and the backend — nothing to type on either phone.
-- Backend = the "Household Receipts" Apps Script project (code in `receipts/backend/`), deployed as a web app; its `/exec` URL is baked into `index.html` as `DEFAULTS.url`.
+- Backend = the "Household Receipts" Apps Script project (code in `receipts/backend/`), deployed as a web app (deployment `AKfycbwmez6dyUMTubrqBMnQ6ehYslyQbhS6mXGPGBAP5OJ8P4sU_OsZZJEDba2sKaIT5amI`); its `/exec` URL is baked into `index.html` as `DEFAULTS.url`.
+- Sheet: https://docs.google.com/spreadsheets/d/18bVhLyeGozW-Z4pB32g_damnmpNo11LNLQa4V6h7HaE/edit · Photos: Drive folder "Household Receipts (photos)".
 
 **Left**
 1. Apps Script → Household Receipts → **Project Settings → Script Properties → Add**: `ANTHROPIC_API_KEY` = a Claude API key (console.anthropic.com → API Keys). Until it is set, receipts queue on the phones and the app says "Will retry".

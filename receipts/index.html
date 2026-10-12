@@ -355,9 +355,9 @@ nav.tabs button .dot{position:absolute;top:8px;left:calc(50% + 8px);background:v
 (function () {
   'use strict';
   const C = window.ReceiptsCore;
-  const APP_VERSION = '1.1.0';
+  const APP_VERSION = '1.1.1';
   // Pre-set connection so nobody has to type anything. More → Connection can still override.
-  const DEFAULTS = { url: '', token: 'prairie482' };
+  const DEFAULTS = { url: 'https://script.google.com/macros/s/AKfycbwmez6dyUMTubrqBMnQ6ehYslyQbhS6mXGPGBAP5OJ8P4sU_OsZZJEDba2sKaIT5amI/exec', token: 'prairie482' };
   const $ = function (id) { return document.getElementById(id); };
   const fmtMoney = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' });
   const money = function (n) { return fmtMoney.format(Number(n) || 0); };
