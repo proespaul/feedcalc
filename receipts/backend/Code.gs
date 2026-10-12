@@ -1368,6 +1368,9 @@ function writeReceipt_(ss, sh, row, rec, status) {
   values[RC.BANK_TXN - 1] = rec.bankTxn || '';
   values[RC.MATCH_NOTE - 1] = rec.matchNote || '';
   sh.getRange(row, 1, 1, values.length).setValues([values]);
+  // appendRow() in phase 1 gives date cells an automatic date-time format; put the column formats back
+  sh.getRange(row, RC.DATE).setNumberFormat('yyyy-mm-dd');
+  sh.getRange(row, RC.CAPTURED_AT, 1, 2).setNumberFormat('yyyy-mm-dd hh:mm');
 
   // Items: remove any old lines for this receipt (retry case), then append
   const ish = ss.getSheetByName(CONFIG.TABS.ITEMS);
