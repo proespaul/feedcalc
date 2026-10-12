@@ -98,6 +98,8 @@
         who: String(c.who || '').trim(),
         tokenBad: !!c.tokenBad,
         camOnOpen: c.camOnOpen !== false,
+        camZoom: Number(c.camZoom) > 0 ? Number(c.camZoom) : 1,
+        camWideId: String(c.camWideId || ''),
         bankAccount: String(c.bankAccount || '')
       };
     });

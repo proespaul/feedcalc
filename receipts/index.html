@@ -108,7 +108,18 @@ ul.list{list-style:none;margin:0;padding:0}
 .cbtn.on{background:#fff;color:#111}
 .shutter{width:78px;height:78px;border-radius:50%;background:#fff;border:5px solid rgba(255,255,255,.45);background-clip:padding-box;box-shadow:0 2px 12px rgba(0,0,0,.45);padding:0}
 .shutter:active{transform:scale(.9)}
-.cam .hint{position:absolute;bottom:108px;left:0;right:0;text-align:center;color:#fff;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,.8);pointer-events:none;padding:0 20px}
+.cam .hint{position:absolute;bottom:182px;left:0;right:0;text-align:center;color:#fff;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,.8);pointer-events:none;padding:0 20px}
+.cam .zoom{position:absolute;left:16px;right:16px;bottom:104px;display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.cam .zoom .zrow{display:flex;align-items:center;gap:10px}
+.cam .zoom input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:28px;background:transparent;margin:0}
+.cam .zoom input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:999px;background:rgba(255,255,255,.55)}
+.cam .zoom input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid rgba(0,0,0,.35);margin-top:-11px;box-shadow:0 1px 6px rgba(0,0,0,.5)}
+.cam .zoom input[type=range]::-moz-range-track{height:4px;border-radius:999px;background:rgba(255,255,255,.55)}
+.cam .zoom input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid rgba(0,0,0,.35)}
+.cam .zoom .zval{min-width:46px;text-align:center;background:rgba(0,0,0,.5);color:#fff;border-radius:999px;padding:5px 9px;font-weight:700;font-size:13px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.cam .zchips{display:flex;gap:6px;justify-content:center}
+.cam .zchip{background:rgba(0,0,0,.5);color:#fff;border:0;border-radius:999px;padding:5px 9px;font-weight:700;font-size:12px;-webkit-tap-highlight-color:transparent}
+.cam .zchip.on{background:#fff;color:#111}
 .cam .parts{position:absolute;top:56px;left:0;right:0;text-align:center}
 .cam .parts span{background:var(--accent);color:#fff;border-radius:999px;padding:6px 12px;font-weight:700;font-size:13px}
 .camoff{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;color:#fff;text-align:center}
@@ -237,6 +248,10 @@ nav.tabs button .dot{position:absolute;top:8px;left:calc(50% + 8px);background:v
       </div>
       <div class="parts hidden" id="camParts"><span></span></div>
       <div class="hint" id="camHint">Fill the frame with the receipt, then tap the button</div>
+      <div class="zoom hidden" id="zoomWrap">
+        <div class="zchips" id="zoomChips"></div>
+        <div class="zrow"><input type="range" id="zoomRange" min="1" max="2" step="0.05" value="1" aria-label="Zoom"><span class="zval" id="zoomVal">1×</span></div>
+      </div>
       <div class="bottom" id="camBottom">
         <label class="cbtn l" for="pickInput">🖼️ Photo / PDF</label>
         <button class="shutter" id="shutterBtn" type="button" aria-label="Take photo"></button>
@@ -355,7 +370,7 @@ nav.tabs button .dot{position:absolute;top:8px;left:calc(50% + 8px);background:v
 (function () {
   'use strict';
   const C = window.ReceiptsCore;
-  const APP_VERSION = '1.1.1';
+  const APP_VERSION = '1.2.0';
   // Pre-set connection so nobody has to type anything. More → Connection can still override.
   const DEFAULTS = { url: 'https://script.google.com/macros/s/AKfycbwmez6dyUMTubrqBMnQ6ehYslyQbhS6mXGPGBAP5OJ8P4sU_OsZZJEDba2sKaIT5amI/exec', token: 'prairie482' };
   const $ = function (id) { return document.getElementById(id); };
@@ -370,7 +385,7 @@ nav.tabs button .dot{position:absolute;top:8px;left:calc(50% + 8px);background:v
   const state = {
     cfg: null, records: [], summary: null, summaryAt: 0, summaryStale: true, view: 'snap',
     mode: 'month', key: '', drill: null, expanded: {}, swReg: null, busy: false,
-    cam: { stream: null, track: null, caps: {}, torch: false, longMode: false, parts: [], backCams: [], camIdx: 0, starting: false, off: false },
+    cam: { stream: null, track: null, caps: {}, torch: false, longMode: false, parts: [], backCams: [], camIdx: 0, starting: false, off: false, zoom: 1, zoomMin: 1, zoomMax: 1, wideIdx: -1, lensBase: 1 },
     bank: { uploading: false, status: '' },
     budget: { edit: false, values: {} },
     attOpen: {}
@@ -447,6 +462,9 @@ nav.tabs button .dot{position:absolute;top:8px;left:calc(50% + 8px);background:v
     $('longBtn').addEventListener('click', toggleLong);
     $('doneBtn').addEventListener('click', finishLong);
     $('camRetry').addEventListener('click', function () { state.cam.off = false; startCamera(true); });
+    $('zoomRange').addEventListener('input', function () { setZoom(Number($('zoomRange').value), false); });
+    $('zoomRange').addEventListener('change', function () { setZoom(Number($('zoomRange').value), true); });
+    $('zoomChips').addEventListener('click', function (e) { const b = e.target.closest('.zchip'); if (b) setZoom(Number(b.dataset.z), true); });
     $('sendNowBtn').addEventListener('click', function () { kickSync(true); });
     $('syncAllBtn').addEventListener('click', function () { kickSync(true); showView('snap'); });
     $('refreshBtn').addEventListener('click', function () { state.summaryStale = true; showView('spend'); });
@@ -517,11 +535,12 @@ nav.tabs button .dot{position:absolute;top:8px;left:calc(50% + 8px);background:v
       try { await v.play(); } catch (e) { /* autoplay with muted is fine */ }
       cam.caps = cam.track.getCapabilities ? cam.track.getCapabilities() : {};
       $('torchBtn').classList.toggle('hidden', !cam.caps.torch);
+      setupZoom();
       $('camOff').classList.add('hidden');
       $('camTop').classList.remove('hidden'); $('camBottom').classList.remove('hidden'); $('camHint').classList.remove('hidden');
       cam.off = false;
       if (cam.torch) applyTorch(true);
-      if (!cam.backCams.length) listBackCameras();
+      if (!cam.backCams.length) listBackCameras().then(setupZoom);
     } catch (e) {
       const name = e && e.name;
       camFallback(name === 'NotAllowedError' || name === 'SecurityError'
@@ -542,7 +561,7 @@ nav.tabs button .dot{position:absolute;top:8px;left:calc(50% + 8px);background:v
     stopCamera();
     $('camWhy').textContent = why || '';
     $('camOff').classList.remove('hidden');
-    $('camTop').classList.add('hidden'); $('camBottom').classList.add('hidden'); $('camHint').classList.add('hidden'); $('camParts').classList.add('hidden');
+    $('camTop').classList.add('hidden'); $('camBottom').classList.add('hidden'); $('camHint').classList.add('hidden'); $('camParts').classList.add('hidden'); $('zoomWrap').classList.add('hidden');
     $('camRetry').classList.toggle('hidden', !why || /cannot show|No camera/.test(why));
     $('camRetry').textContent = /webcam/.test(why) ? 'Try the webcam' : 'Try the live camera';
   }
@@ -565,10 +584,70 @@ nav.tabs button .dot{position:absolute;top:8px;left:calc(50% + 8px);background:v
     const cam = state.cam;
     if (!cam.backCams.length) return;
     cam.camIdx = (cam.camIdx + 1) % cam.backCams.length;
+    if (cam.zoomWanted && cam.zoomWanted < 1 && cam.camIdx !== 0) {
+      cam.wideIdx = cam.camIdx;                                       // the user is telling us which one is the wide lens
+      state.cfg = await C.setConfig({ camWideId: cam.backCams[cam.camIdx].deviceId });
+    }
     stopCamera();
     await startCamera(true);
     const lbl = (cam.backCams[cam.camIdx].label || '').replace(/camera2?\s*\d*,?\s*/i, '').replace(/facing (back|environment)/i, '').trim();
     toast(lbl ? 'Lens: ' + lbl : 'Lens ' + (cam.camIdx + 1) + ' of ' + cam.backCams.length);
+  }
+
+  /* ---- zoom: the lens's own zoom range, extended below 1× by switching to the wide lens when there is one ---- */
+  function wideLensIndex() {
+    const cam = state.cam;
+    if (cam.backCams.length < 2) return -1;
+    const byLabel = cam.backCams.findIndex(function (d) { return /ultra|wide|0\.5/i.test(d.label || ''); });
+    if (byLabel >= 0) return byLabel;
+    const saved = state.cfg && state.cfg.camWideId ? cam.backCams.findIndex(function (d) { return d.deviceId === state.cfg.camWideId; }) : -1;
+    if (saved >= 0) return saved;
+    return cam.backCams.length - 1;   // Android labels are generic; the last back camera is the usual guess, ↔ Lens corrects it
+  }
+  function setupZoom() {
+    const cam = state.cam;
+    if (!cam.track) return;
+    const z = cam.caps.zoom;
+    cam.zoomMin = z && isFinite(z.min) && z.min > 0 ? z.min : 1;
+    cam.zoomMax = z && isFinite(z.max) && z.max > cam.zoomMin ? Math.min(z.max, 5) : 1;
+    cam.wideIdx = cam.zoomMin < 1 ? -1 : wideLensIndex();
+    const onWide = cam.wideIdx >= 0 && cam.camIdx === cam.wideIdx;
+    cam.lensBase = onWide ? 0.5 : 1;                               // what "1× on this lens" means on the slider
+    const uiMin = Math.min(cam.zoomMin, cam.wideIdx >= 0 ? 0.5 : 1);
+    const uiMax = Math.max(onWide ? 1 : cam.zoomMax, 1);
+    const wrap = $('zoomWrap'), slider = $('zoomRange');
+    if (uiMax - uiMin < 0.1) { wrap.classList.add('hidden'); return; }
+    wrap.classList.remove('hidden');
+    slider.min = uiMin; slider.max = uiMax; slider.step = 0.05;
+    const chips = [0.5, 1, 2, 3].filter(function (v) { return v >= uiMin - 0.01 && v <= uiMax + 0.01; });
+    $('zoomChips').innerHTML = chips.map(function (v) { return '<button class="zchip" data-z="' + v + '" type="button">' + v + '×</button>'; }).join('');
+    const want = Math.min(uiMax, Math.max(uiMin, Number(cam.zoomWanted || (state.cfg && state.cfg.camZoom) || 1)));
+    setZoom(want, false, true);
+  }
+  let zoomSaveTimer = null;
+  async function setZoom(value, commit, silent) {
+    const cam = state.cam;
+    value = Math.round(value * 20) / 20;
+    cam.zoomWanted = value;
+    $('zoomRange').value = value;
+    $('zoomVal').textContent = (value < 1 ? value.toFixed(1) : (Math.abs(value - Math.round(value)) < 0.01 ? Math.round(value) : value.toFixed(1))) + '×';
+    $('zoomChips').querySelectorAll('.zchip').forEach(function (b) { b.classList.toggle('on', Math.abs(Number(b.dataset.z) - value) < 0.03); });
+    if (commit) { if (zoomSaveTimer) clearTimeout(zoomSaveTimer); zoomSaveTimer = setTimeout(async function () { state.cfg = await C.setConfig({ camZoom: value }); }, 400); }
+    if (!cam.track) return;
+    // Below the lens's own range → the wide lens; back at 1× or more → the main lens
+    if (value < cam.zoomMin - 0.01 && cam.wideIdx >= 0 && cam.camIdx !== cam.wideIdx) { await switchToLens(cam.wideIdx); return; }
+    if (value >= 1 && cam.lensBase < 1 && cam.wideIdx >= 0 && cam.camIdx === cam.wideIdx) { await switchToLens(0); return; }
+    const z = cam.caps.zoom;
+    if (!z) return;
+    const lensZoom = Math.min(z.max, Math.max(z.min, value / cam.lensBase));
+    try { await cam.track.applyConstraints({ advanced: [{ zoom: lensZoom }] }); } catch (e) { /* lens may not support it */ }
+  }
+  async function switchToLens(idx) {
+    const cam = state.cam;
+    if (!cam.backCams.length || idx === cam.camIdx) return;
+    cam.camIdx = idx;
+    stopCamera();
+    await startCamera(true);
   }
 
   function applyTorch(on) {
@@ -1813,7 +1892,7 @@ nav.tabs button .dot{position:absolute;top:8px;left:calc(50% + 8px);background:v
   }
 
   // expose a little for tests
-  window.__receipts = { state: state, refreshRecords: refreshRecords, runSync: runSync, renderSpend: renderSpend, renderBudget: renderBudget, prepareImage: prepareImage, sliceTall: sliceTall, prepareParts: prepareParts, drainInbox: drainInbox, keyFor: keyFor, shiftKey: shiftKey, daysInKey: daysInKey, aggregate: aggregate, proposeBudget: proposeBudget, showView: showView, selectPeriod: selectPeriod, maybeRefreshSummary: maybeRefreshSummary, openDrill: openDrill, startCamera: startCamera, capture: capture };
+  window.__receipts = { state: state, refreshRecords: refreshRecords, runSync: runSync, renderSpend: renderSpend, renderBudget: renderBudget, prepareImage: prepareImage, sliceTall: sliceTall, prepareParts: prepareParts, drainInbox: drainInbox, keyFor: keyFor, shiftKey: shiftKey, daysInKey: daysInKey, aggregate: aggregate, proposeBudget: proposeBudget, showView: showView, selectPeriod: selectPeriod, maybeRefreshSummary: maybeRefreshSummary, openDrill: openDrill, startCamera: startCamera, capture: capture, setZoom: setZoom, setupZoom: setupZoom };
 })();
 </script>
 </body>

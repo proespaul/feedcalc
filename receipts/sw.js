@@ -1,7 +1,7 @@
 /* sw.js — Household Receipts service worker
  * 1. Caches the app so it opens with no signal.
  * 2. On Android, finishes sending queued receipts in the background (Background Sync). */
-const VERSION = 'v1.1.1';   // bump on every release so phones pick up the new files
+const VERSION = 'v1.2.0';   // bump on every release so phones pick up the new files
 const CACHE = 'household-receipts-' + VERSION;
 const ASSETS = [
   './', './index.html', './core.js', './manifest.json',

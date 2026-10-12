@@ -15,6 +15,7 @@
 
 **Day to day**
 - The app opens straight to the camera. Tap the shutter; it reads the lines and files them; no signal = queued until later.
+- Zoom: slider with 0.5× / 1× / 2× taps under the viewfinder; the app reopens at the last zoom used. Below 1× uses the phone's wide lens — if the phone reports its lenses without names, the app guesses and the ↔ Lens button corrects it (remembered).
 - *Long receipt* mode: take the top, then the rest, tap Done — filed as one receipt.
 - *Photo / PDF* button (or the share sheet): screenshots of online orders (long ones are sliced automatically) and PDF receipts from email.
 - *Spending* tab: Month / Quarter / Year / All with ‹ › arrows, "vs last period", tap a category or store to drill in, tap a bar to jump to that period.
