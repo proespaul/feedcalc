@@ -9,9 +9,9 @@
   const DB_VERSION = 2;
   const QUEUE = 'queue';
   const KV = 'kv';
-  const INBOX = 'inbox';   // photos handed over by the Android share sheet, waiting for the page to resize + queue them
-  const UPLOAD_TIMEOUT_MS = 120000;
-  const STALE_UPLOAD_MS = 3 * 60 * 1000;   // an "uploading" record older than this is retried
+  const INBOX = 'inbox';   // files handed over by the Android share sheet, waiting for the page to resize + queue them
+  const UPLOAD_TIMEOUT_MS = 150000;
+  const STALE_UPLOAD_MS = 4 * 60 * 1000;   // an "uploading" record older than this is retried
 
   /* ---------------- IndexedDB ---------------- */
 
@@ -96,7 +96,9 @@
         url: normalizeUrl(c.url || ''),
         token: String(c.token || '').trim(),
         who: String(c.who || '').trim(),
-        tokenBad: !!c.tokenBad
+        tokenBad: !!c.tokenBad,
+        camOnOpen: c.camOnOpen !== false,
+        bankAccount: String(c.bankAccount || '')
       };
     });
   }
@@ -196,7 +198,7 @@
   }
 
   function ping(cfg) { return getJson(cfg, { action: 'ping' }, 30000); }
-  function fetchSummary(cfg) { return getJson(cfg, { action: 'summary' }, 60000); }
+  function fetchSummary(cfg) { return getJson(cfg, { action: 'summary' }, 90000); }
 
   /* ---------------- Queue + sync ---------------- */
 
@@ -204,7 +206,11 @@
     return Math.min(30 * 60 * 1000, 30000 * Math.pow(2, Math.max(0, attempts - 1)));
   }
 
-  /** Adds a ready-to-send JPEG blob to the queue. Returns the record. */
+  /**
+   * Adds a ready-to-send file to the queue. Returns the record.
+   * blob  = what Drive keeps (jpeg, png or pdf)
+   * meta  = { thumb, who, capturedAt, kind: 'photo'|'screenshot'|'pdf', pages: [jpeg blobs] (slices for Claude, optional) }
+   */
   function enqueue(blob, meta) {
     meta = meta || {};
     return sha256Hex(blob).then(function (hash) {
@@ -221,9 +227,11 @@
           lastError: '',
           retryable: true,
           hash: hash,
-          mime: blob.type || 'image/jpeg',
+          mime: blob.type || (meta.kind === 'pdf' ? 'application/pdf' : 'image/jpeg'),
           size: blob.size,
           blob: blob,
+          pages: Array.isArray(meta.pages) && meta.pages.length > 1 ? meta.pages : null,
+          kind: meta.kind || 'photo',
           thumb: meta.thumb || null,
           who: meta.who || '',
           result: null,
@@ -246,15 +254,17 @@
       rec.attempts = 0; rec.lastError = ''; rec.retryable = true; rec.nextTryAt = 0;
       if (data.status === 'not_a_receipt') {
         rec.status = 'rejected';
-        rec.message = data.message || 'That photo did not look like a receipt.';
-        rec.blob = null;
+        rec.message = data.message || 'That did not look like a receipt.';
+        rec.blob = null; rec.pages = null;
       } else {
         rec.status = 'done';
         rec.result = data.receipt || null;
         rec.receiptId = data.receiptId || (data.receipt && data.receipt.id) || '';
         rec.duplicate = !!data.duplicate;
+        rec.duplicateOf = data.duplicateOf || '';
+        rec.duplicateStrength = data.duplicateStrength || '';
         rec.doneAt = Date.now();
-        rec.blob = null; // photo is safely in Drive now; free the phone's space
+        rec.blob = null; rec.pages = null; // safely in Drive now; free the phone's space
       }
       return rec;
     }
@@ -272,7 +282,7 @@
       rec.attempts = Math.max(0, rec.attempts - 1);
     } else if (data && data.retryable === false && !code) {
       rec.retryable = false;
-      rec.lastError = (data && data.message) || 'The backend refused this photo.';
+      rec.lastError = (data && data.message) || 'The backend refused this file.';
     } else {
       rec.retryable = data ? data.retryable !== false : true;
       rec.nextTryAt = Date.now() + backoffMs(rec.attempts);
@@ -284,24 +294,27 @@
   /** Sends one record now (ignores backoff). */
   function uploadOne(rec, cfg) {
     if (!rec.blob) {
-      rec.status = 'error'; rec.retryable = false; rec.lastError = 'Photo is no longer on this phone.';
+      rec.status = 'error'; rec.retryable = false; rec.lastError = 'File is no longer on this phone.';
       return putRecord(rec);
     }
     rec.status = 'uploading';
     rec.uploadStartedAt = Date.now();
     if (!rec.who && cfg.who) rec.who = cfg.who;   // snapped before a name was chosen
     return putRecord(rec).then(function () {
-      return blobToBase64(rec.blob);
-    }).then(function (b64) {
-      return postJson(cfg, {
+      return Promise.all([blobToBase64(rec.blob)].concat((rec.pages || []).map(blobToBase64)));
+    }).then(function (encoded) {
+      const payload = {
         action: 'receipt',
         hash: rec.hash,
-        image: b64,
+        image: encoded[0],
         mime: rec.mime,
+        kind: rec.kind || 'photo',
         who: rec.who || cfg.who || '',
         capturedAt: rec.capturedAt,
         clientId: rec.id
-      });
+      };
+      if (encoded.length > 1) payload.pages = encoded.slice(1);
+      return postJson(cfg, payload);
     }).then(function (data) {
       return getRecord(rec.id).then(function (fresh) {
         if (!fresh) return null;                       // deleted while uploading

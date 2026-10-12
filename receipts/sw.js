@@ -1,7 +1,7 @@
 /* sw.js — Household Receipts service worker
  * 1. Caches the app so it opens with no signal.
  * 2. On Android, finishes sending queued receipts in the background (Background Sync). */
-const VERSION = 'v1.0.2';   // bump on every release so phones pick up the new files
+const VERSION = 'v1.1.0';   // bump on every release so phones pick up the new files
 const CACHE = 'household-receipts-' + VERSION;
 const ASSETS = [
   './', './index.html', './core.js', './manifest.json',
@@ -35,7 +35,7 @@ self.addEventListener('fetch', function (event) {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;   // backend + anything external: straight to network
 
-  // Android share sheet → "Receipts": the photos arrive here as a form POST
+  // Android share sheet → "Receipts": the photos / screenshots / PDFs arrive here as a form POST
   if (req.method === 'POST' && /\/share-target\/?$/.test(url.pathname)) {
     event.respondWith(handleShare(req));
     return;
@@ -72,7 +72,7 @@ self.addEventListener('fetch', function (event) {
 
 function handleShare(req) {
   return req.formData().then(function (fd) {
-    const files = fd.getAll('photos').filter(function (f) { return f && f.size > 0 && /^image\//.test(f.type || ''); });
+    const files = fd.getAll('photos').filter(function (f) { return f && f.size > 0 && (/^image\//.test(f.type || '') || f.type === 'application/pdf' || /\.pdf$/i.test(f.name || '')); });
     let chain = Promise.resolve();
     files.forEach(function (f) {
       chain = chain.then(function () {
